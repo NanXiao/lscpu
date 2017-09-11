@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <err.h>
+#include <machine/cpu.h>
 
 #define ARRAY_LEN(array) (sizeof(array) / sizeof(array[0]))
 
@@ -36,6 +37,7 @@ static void usage(void)
 int main(int argc, char **argv) 
 {
     int mib[2], ch = 0, i = 0;
+	size_t len = 0;
     gen_cpu_info gen_info;
     sysctl_get_cpu_info sysctl_array[] = {
         {HW_MACHINE, gen_info.arch, sizeof(gen_info.arch), "HW_MACHINE"},
@@ -78,7 +80,18 @@ int main(int argc, char **argv)
     		err(1, sysctl_array[i].err_msg);
         }
     }
-   
+
+	if (!strcmp(gen_info.arch, "i386") || !strcmp(gen_info.arch, "amd64"))
+	{
+	    mib[0] = CTL_MACHDEP;
+	    mib[1] = CPU_CPUVENDOR;
+		len = sizeof(gen_info.vendor);
+	    if (sysctl(mib, ARRAY_LEN(mib), gen_info.vendor, &len, NULL, 0) == -1)
+	    {
+			err(1, "CPU_CPUVENDOR");
+	    }
+	}
+	
     printf("%-16s: %s\n", "Architecture", gen_info.arch);
     printf("%-16s: %s\n", "Byte Order", gen_info.byte_order == 1234 ? "Little Endian" : "Big Endian");
     printf("%-16s: %s\n", "Model name", gen_info.model);
