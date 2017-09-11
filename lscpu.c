@@ -37,7 +37,7 @@ static void usage(void)
 int main(int argc, char **argv) 
 {
     int mib[2], ch = 0, i = 0;
-	size_t len = 0;
+    size_t len = 0;
     gen_cpu_info gen_info;
     sysctl_get_cpu_info sysctl_array[] = {
         {HW_MACHINE, gen_info.arch, sizeof(gen_info.arch), "HW_MACHINE"},
