@@ -81,17 +81,17 @@ int main(int argc, char **argv)
         }
     }
 
-	if (!strcmp(gen_info.arch, "i386") || !strcmp(gen_info.arch, "amd64"))
-	{
-	    mib[0] = CTL_MACHDEP;
-	    mib[1] = CPU_CPUVENDOR;
-		len = sizeof(gen_info.vendor);
-	    if (sysctl(mib, ARRAY_LEN(mib), gen_info.vendor, &len, NULL, 0) == -1)
-	    {
-			err(1, "CPU_CPUVENDOR");
-	    }
-	}
-	
+    if (!strcmp(gen_info.arch, "i386") || !strcmp(gen_info.arch, "amd64"))
+    {
+        mib[0] = CTL_MACHDEP;
+        mib[1] = CPU_CPUVENDOR;
+        len = sizeof(gen_info.vendor);
+        if (sysctl(mib, ARRAY_LEN(mib), gen_info.vendor, &len, NULL, 0) == -1)
+        {
+        	err(1, "CPU_CPUVENDOR");
+        }
+    }
+
     printf("%-16s: %s\n", "Architecture", gen_info.arch);
     printf("%-16s: %s\n", "Byte Order", gen_info.byte_order == 1234 ? "Little Endian" : "Big Endian");
     printf("%-16s: %s\n", "Model name", gen_info.model);
