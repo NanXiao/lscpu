@@ -58,14 +58,14 @@ int main(int argc, char **argv)
             }
         }
     }
-
+    
     argc -= optind;
-	argv += optind;
+    argv += optind;
 
-	if (argc)
-	{
-		usage();
-	}
+    if (argc)
+    {
+        usage();
+    }
 
     memset(&gen_info, 0, sizeof(gen_info));
 
