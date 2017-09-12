@@ -92,13 +92,13 @@ int main(int argc, char **argv)
         }
     }
 
-    printf("%-16s: %s\n", "Architecture", gen_info.arch);
-    printf("%-16s: %s\n", "Byte Order", gen_info.byte_order == 1234 ? "Little Endian" : "Big Endian");
-    printf("%-16s: %s\n", "Model name", gen_info.model);
-    printf("%-16s: %s\n", "Vendor", gen_info.vendor);
-    printf("%-16s: %d\n", "Active CPU(s)", gen_info.active_cpu_num);
-    printf("%-16s: %d\n", "Total CPU(s)", gen_info.total_cpu_num);
-    printf("%-16s: %d\n", "CPU MHz", gen_info.speed);
+    printf("%-16s %s\n", "Architecture:", gen_info.arch);
+    printf("%-16s %s\n", "Byte Order:", gen_info.byte_order == 1234 ? "Little Endian" : "Big Endian");
+    printf("%-16s %s\n", "Model name:", gen_info.model);
+    printf("%-16s %s\n", "Vendor:", gen_info.vendor);
+    printf("%-16s %d\n", "Active CPU(s):", gen_info.active_cpu_num);
+    printf("%-16s %d\n", "Total CPU(s):", gen_info.total_cpu_num);
+    printf("%-16s %d\n", "CPU MHz:", gen_info.speed);
     
     return 0;    
 }
