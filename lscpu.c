@@ -9,8 +9,10 @@
 #include <machine/cpu.h>
 #include <cpuid.h>
 
+/* macro definitions */
 #define ARRAY_LEN(array) (sizeof(array) / sizeof(array[0]))
 
+/* struct definitions */
 typedef struct
 {
     char arch[16];
@@ -32,11 +34,17 @@ typedef struct
 
 typedef struct
 {
+    char vendor[13];
     unsigned char stepping;
     unsigned char model;
     unsigned short family;
 } x86_cpu_info;
 
+/* variables definitions */
+gen_cpu_info gen_info;
+x86_cpu_info x86_info;
+
+/* function definitions*/
 static int is_x86_cpu(char *arch)
 {
     return (!strcmp(arch, "i386") || !strcmp(arch, "amd64"));
@@ -51,9 +59,7 @@ static void usage(void)
 int main(int argc, char **argv) 
 {
     int mib[2], ch = 0, i = 0;
-    size_t len = 0;
-    gen_cpu_info gen_info;
-    x86_cpu_info x86_info;
+
     sysctl_get_cpu_info sysctl_array[] = {
         {HW_MACHINE, gen_info.arch, sizeof(gen_info.arch), "HW_MACHINE"},
         {HW_BYTEORDER, &(gen_info.byte_order), sizeof(gen_info.byte_order), "HW_BYTEORDER"},
@@ -84,9 +90,6 @@ int main(int argc, char **argv)
         usage();
     }
 
-    memset(&gen_info, 0, sizeof(gen_info));
-    memset(&x86_info, 0, sizeof(x86_info));
-
     for (i = 0; i < ARRAY_LEN(sysctl_array); i++)
     {
         mib[0] = CTL_HW;
@@ -101,14 +104,11 @@ int main(int argc, char **argv)
     {
         uint32_t eax, ebx, ecx, edx;
         
-        mib[0] = CTL_MACHDEP;
-        mib[1] = CPU_CPUVENDOR;
-        len = sizeof(gen_info.vendor);
-        if (sysctl(mib, ARRAY_LEN(mib), gen_info.vendor, &len, NULL, 0) == -1)
-        {
-            err(1, "CPU_CPUVENDOR");
-        }
-
+        __cpuid (0, eax, ebx, ecx, edx);
+        memcpy(x86_info.vendor, &ebx, sizeof(ebx));
+        memcpy(&(x86_info.vendor[4]), &edx, sizeof(edx));
+        memcpy(&(x86_info.vendor[8]), &ecx, sizeof(ecx));
+        
         __cpuid (1, eax, ebx, ecx, edx);
         x86_info.stepping = eax & 0xF;
         x86_info.family = (eax >> 8) & 0xF;
@@ -121,22 +121,25 @@ int main(int argc, char **argv)
                 x86_info.family |= (eax >> 16) & 0xFF0;
             }
         }
-        
     }
 
     printf("%-16s %s\n", "Architecture:", gen_info.arch);
     printf("%-16s %s\n", "Byte Order:", gen_info.byte_order == 1234 ? "Little Endian" : "Big Endian");    
     printf("%-16s %d\n", "Active CPU(s):", gen_info.active_cpu_num);
     printf("%-16s %d\n", "Total CPU(s):", gen_info.total_cpu_num);
-    printf("%-16s %s\n", "Vendor:", gen_info.vendor);
     if (is_x86_cpu(gen_info.arch))
     {
+        printf("%-16s %s\n", "Vendor:", x86_info.vendor);
         printf("%-16s %d\n", "CPU family:", x86_info.family);
-        printf("%-16s %d\n", "Model:", x86_info.model);
+        printf("%-16s %d\n", "Model:", x86_info.model);        
+    }
+    else 
+    {        
+        printf("%-16s %s\n", "Vendor:", gen_info.vendor);
     }
     printf("%-16s %s\n", "Model name:", gen_info.model);
     if (is_x86_cpu(gen_info.arch))
-    {
+    {   
         printf("%-16s %d\n", "Stepping:", x86_info.stepping);
     }
     printf("%-16s %d\n", "CPU MHz:", gen_info.speed);
