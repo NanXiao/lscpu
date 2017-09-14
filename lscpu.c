@@ -11,6 +11,8 @@
 
 /* macro definitions */
 #define ARRAY_LEN(array) (sizeof(array) / sizeof(array[0]))
+#define CPUID_MAX_STANDARD_FUNCTION (0x17)
+#define CPUID_MAX_EXTENDED_FUNCTION (0x08)
 
 /* struct definitions */
 typedef struct
@@ -34,10 +36,13 @@ typedef struct
 
 typedef struct
 {
+    int standard_mask;
+    int extended_mask;
     char vendor[13];
     unsigned char stepping;
     unsigned char model;
     unsigned short family;
+    char standard_flags[128];
 } x86_cpu_info;
 
 /* variables definitions */
@@ -48,6 +53,93 @@ x86_cpu_info x86_info;
 static int is_x86_cpu(char *arch)
 {
     return (!strcmp(arch, "i386") || !strcmp(arch, "amd64"));
+}
+
+static int is_amd_cpu(char *vendor)
+{
+    return (!strcmp(vendor, "AMDisbetter!") || !strcmp(vendor, "AuthenticAMD"));
+}
+
+static int is_intel_cpu(char *vendor)
+{
+    return !strcmp(vendor, "GenuineIntel");
+}
+
+static void get_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len)
+{
+    snprintf(flags, len, "%s%s%s%s%s%s%s%s"
+                         "%s%s%s%s%s%s%s"
+                         "%s%s%s%s%s%s%s"
+                         "%s%s%s%s%s%s%s",
+                edx & 0x00000001 ? "fpu " : "",
+                edx & 0x00000002 ? "vme " : "",
+                edx & 0x00000004 ? "de " : "",
+                edx & 0x00000008 ? "pse " : "",
+                edx & 0x00000010 ? "msr " : "",
+                edx & 0x00000020 ? "tsc " : "",
+                edx & 0x00000040 ? "pae " : "",
+                edx & 0x00000080 ? "mce " : "",
+                edx & 0x00000100 ? "cx8 " : "",
+                edx & 0x00000200 ? "apic " : "",
+                edx & 0x00000800 ? "sep " : "",
+                edx & 0x00001000 ? "mtrr " : "",
+                edx & 0x00002000 ? "pge " : "",
+                edx & 0x00004000 ? "mca " : "",
+                edx & 0x00008000 ? "cmov " : "",
+                edx & 0x00010000 ? "pat " : "",
+                edx & 0x00020000 ? "pse36 " : "",
+                intel ? (edx & 0x00040000 ? "psn " : "") : "",
+                edx & 0x00080000 ? "cflsh " : "",
+                intel ? (edx & 0x00200000 ? "ds " : "") : "",
+                intel ? (edx & 0x00400000 ? "acpi " : "") : "",
+                edx & 0x00800000 ? "mmx " : "",
+                edx & 0x01000000 ? "fxsr " : "",
+                edx & 0x02000000 ? "sse " : "",
+                edx & 0x04000000 ? "sse2 " : "",
+                intel ? (edx & 0x08000000 ? "ss " : "") : "",
+                edx & 0x10000000 ? "htt " : "",
+                intel ? (edx & 0x20000000 ? "tm " : "") : "",
+                intel ? (edx & 0x80000000 ? "pbe " : "") : "");
+}
+
+static void get_x86_cpu_info(x86_cpu_info *x86_info)
+{
+    int i = 0;
+    uint32_t eax, ebx, ecx, edx;
+    
+    __cpuid (0, eax, ebx, ecx, edx);
+    memcpy(x86_info->vendor, &ebx, sizeof(ebx));
+    memcpy(&(x86_info->vendor[4]), &edx, sizeof(edx));
+    memcpy(&(x86_info->vendor[8]), &ecx, sizeof(ecx));
+    for (i = 0; (i <= eax) && (i <= CPUID_MAX_STANDARD_FUNCTION); i++)
+    {
+        x86_info->standard_mask |= (1 << i);
+    }
+
+    eax = 1;
+    if (x86_info->standard_mask & (1 << eax))
+    {
+        __cpuid (eax, eax, ebx, ecx, edx);
+        x86_info->stepping = eax & 0xF;
+        x86_info->family = (eax >> 8) & 0xF;
+        x86_info->model = (eax >> 4) & 0xF;
+        if ((x86_info->family == 6) || (x86_info->family == 15))
+        {
+            x86_info->model |= (eax >> 12) & 0xF0;
+            if (x86_info->family == 15)
+            {
+                x86_info->family |= (eax >> 16) & 0xFF0;
+            }
+        }
+        if (is_intel_cpu(x86_info->vendor))
+        {
+            get_cpu_standard_flags(1, ecx, edx, x86_info->standard_flags, sizeof(x86_info->standard_flags));
+        }
+        else if (is_amd_cpu(x86_info->vendor))
+        {
+            get_cpu_standard_flags(0, ecx, edx, x86_info->standard_flags, sizeof(x86_info->standard_flags));
+        }
+    }
 }
 
 static void usage(void)
@@ -102,25 +194,7 @@ int main(int argc, char **argv)
 
     if (is_x86_cpu(gen_info.arch))
     {
-        uint32_t eax, ebx, ecx, edx;
-        
-        __cpuid (0, eax, ebx, ecx, edx);
-        memcpy(x86_info.vendor, &ebx, sizeof(ebx));
-        memcpy(&(x86_info.vendor[4]), &edx, sizeof(edx));
-        memcpy(&(x86_info.vendor[8]), &ecx, sizeof(ecx));
-        
-        __cpuid (1, eax, ebx, ecx, edx);
-        x86_info.stepping = eax & 0xF;
-        x86_info.family = (eax >> 8) & 0xF;
-        x86_info.model = (eax >> 4) & 0xF;
-        if ((x86_info.family == 6) || (x86_info.family == 15))
-        {
-            x86_info.model |= (eax >> 12) & 0xF0;
-            if (x86_info.family == 15)
-            {
-                x86_info.family |= (eax >> 16) & 0xFF0;
-            }
-        }
+        get_x86_cpu_info(&x86_info);
     }
 
     printf("%-16s %s\n", "Architecture:", gen_info.arch);
@@ -143,6 +217,10 @@ int main(int argc, char **argv)
         printf("%-16s %d\n", "Stepping:", x86_info.stepping);
     }
     printf("%-16s %d\n", "CPU MHz:", gen_info.speed);
+    if (is_intel_cpu(x86_info.vendor) || is_amd_cpu(x86_info.vendor))
+    {
+        printf("%-16s %s\n", "Flags:", x86_info.standard_flags);
+    }
     return 0;    
 }
 
