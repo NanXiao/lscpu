@@ -42,7 +42,7 @@ typedef struct
     unsigned char stepping;
     unsigned char model;
     unsigned short family;
-    char standard_flags[128];
+    char standard_flags[256];
 } x86_cpu_info;
 
 /* variables definitions */
@@ -67,39 +67,55 @@ static int is_intel_cpu(char *vendor)
 
 static void get_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len)
 {
-    snprintf(flags, len, "%s%s%s%s%s%s%s%s"
-                         "%s%s%s%s%s%s%s"
-                         "%s%s%s%s%s%s%s"
-                         "%s%s%s%s%s%s%s",
-                edx & 0x00000001 ? "fpu " : "",
-                edx & 0x00000002 ? "vme " : "",
-                edx & 0x00000004 ? "de " : "",
-                edx & 0x00000008 ? "pse " : "",
-                edx & 0x00000010 ? "msr " : "",
-                edx & 0x00000020 ? "tsc " : "",
-                edx & 0x00000040 ? "pae " : "",
-                edx & 0x00000080 ? "mce " : "",
-                edx & 0x00000100 ? "cx8 " : "",
-                edx & 0x00000200 ? "apic " : "",
-                edx & 0x00000800 ? "sep " : "",
-                edx & 0x00001000 ? "mtrr " : "",
-                edx & 0x00002000 ? "pge " : "",
-                edx & 0x00004000 ? "mca " : "",
-                edx & 0x00008000 ? "cmov " : "",
-                edx & 0x00010000 ? "pat " : "",
-                edx & 0x00020000 ? "pse36 " : "",
-                intel ? (edx & 0x00040000 ? "psn " : "") : "",
-                edx & 0x00080000 ? "cflsh " : "",
-                intel ? (edx & 0x00200000 ? "ds " : "") : "",
-                intel ? (edx & 0x00400000 ? "acpi " : "") : "",
-                edx & 0x00800000 ? "mmx " : "",
-                edx & 0x01000000 ? "fxsr " : "",
-                edx & 0x02000000 ? "sse " : "",
-                edx & 0x04000000 ? "sse2 " : "",
-                intel ? (edx & 0x08000000 ? "ss " : "") : "",
-                edx & 0x10000000 ? "htt " : "",
-                intel ? (edx & 0x20000000 ? "tm " : "") : "",
-                intel ? (edx & 0x80000000 ? "pbe " : "") : "");
+    snprintf(flags, len,
+            /* edx*/
+            "%s%s%s%s%s%s%s%s"
+            "%s%s%s%s%s%s%s"
+            "%s%s%s%s%s%s%s"
+            "%s%s%s%s%s%s%s"
+            /* ecx */
+            "%s%s"
+            "%s%s%s"
+            "%s%s"
+            "%s",
+            edx & 0x00000001 ? "fpu " : "",
+            edx & 0x00000002 ? "vme " : "",
+            edx & 0x00000004 ? "de " : "",
+            edx & 0x00000008 ? "pse " : "",
+            edx & 0x00000010 ? "msr " : "",
+            edx & 0x00000020 ? "tsc " : "",
+            edx & 0x00000040 ? "pae " : "",
+            edx & 0x00000080 ? "mce " : "",
+            edx & 0x00000100 ? "cx8 " : "",
+            edx & 0x00000200 ? "apic " : "",
+            edx & 0x00000800 ? "sep " : "",
+            edx & 0x00001000 ? "mtrr " : "",
+            edx & 0x00002000 ? "pge " : "",
+            edx & 0x00004000 ? "mca " : "",
+            edx & 0x00008000 ? "cmov " : "",
+            edx & 0x00010000 ? "pat " : "",
+            edx & 0x00020000 ? "pse36 " : "",
+            intel ? (edx & 0x00040000 ? "psn " : "") : "",
+            edx & 0x00080000 ? "cflsh " : "",
+            intel ? (edx & 0x00200000 ? "ds " : "") : "",
+            intel ? (edx & 0x00400000 ? "acpi " : "") : "",
+            edx & 0x00800000 ? "mmx " : "",
+            edx & 0x01000000 ? "fxsr " : "",
+            edx & 0x02000000 ? "sse " : "",
+            edx & 0x04000000 ? "sse2 " : "",
+            intel ? (edx & 0x08000000 ? "ss " : "") : "",
+            edx & 0x10000000 ? "htt " : "",
+            intel ? (edx & 0x20000000 ? "tm " : "") : "",
+            intel ? (edx & 0x80000000 ? "pbe " : "") : "",
+
+            ecx & 0x00000001 ? "sse3 " : "",
+            intel ? (ecx & 0x00000008 ? "mwait " : "") : "",
+            intel ? (ecx & 0x00000010 ? "cpl " : "") : "",
+            intel ? (ecx & 0x00000020 ? "vmx " : "") : "",
+            intel ? (ecx & 0x00000080 ? "est " : "") : "",
+            intel ? (ecx & 0x00000100 ? "tm2 " : "") : "",
+            intel ? (ecx & 0x00000400 ? "l1 " : "") : "",
+            ecx & 0x00002000 ? "cmpxchg16b " : "");
 }
 
 static void get_x86_cpu_info(x86_cpu_info *x86_info)
