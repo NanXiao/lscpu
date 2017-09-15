@@ -16,9 +16,11 @@
 #define CPUID_STANDARD_1_MASK   (0x01)
 #define CPUID_STANDARD_2_MASK   (0x02)
 
+#define CPUID_EXTENDED_5_MASK   (0x05)
+#define CPUID_EXTENDED_6_MASK   (0x06)
+
 #define CPUID_MAX_STANDARD_FUNCTION (0x17)
 #define CPUID_MAX_EXTENDED_FUNCTION (0x08)
-
 
 /* struct definitions */
 typedef struct
@@ -71,6 +73,10 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info);
 /* variables definitions */
 gen_cpu_info gen_info;
 x86_cpu_info x86_info;
+char amd_l1d_cache[8];
+char amd_l1i_cache[8];
+char amd_l2_cache[8];
+char amd_l3_cache[8];
 
 
 /* function definitions */
@@ -396,6 +402,12 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         x86_info->standard_mask |= (1 << i);
     }
 
+	__cpuid(0x80000000, eax, ebx, ecx, edx);
+	for (i = 0; (i <= eax) && (i <= CPUID_MAX_EXTENDED_FUNCTION); i++)
+    {
+        x86_info->extended_mask |= (1 << i);
+    }
+	
     eax = CPUID_STANDARD_1_MASK;
     if (x86_info->standard_mask & (1 << eax))
     {
@@ -445,6 +457,30 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
                 }
             }
         }
+    }
+
+    eax = CPUID_EXTENDED_5_MASK;
+    if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << eax)))
+    {
+        __cpuid(eax, eax, ebx, ecx, edx);
+        
+        snprintf(amd_l1d_cache, sizeof(amd_l1d_cache), "%dK", ((ecx >> 24) & 0xFF));
+        x86_info->l1d_cache = amd_l1d_cache;
+        
+        snprintf(amd_l1i_cache, sizeof(amd_l1i_cache), "%dK", ((edx >> 24) & 0xFF));
+        x86_info->l1i_cache = amd_l1i_cache;
+    }
+
+    eax = CPUID_EXTENDED_6_MASK;
+    if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << eax)))
+    {
+        __cpuid(eax, eax, ebx, ecx, edx);
+        
+        snprintf(amd_l2_cache, sizeof(amd_l2_cache), "%dK", ((ecx >> 16) & 0xFFFF));
+        x86_info->l2_cache = amd_l2_cache;
+        
+        snprintf(amd_l3_cache, sizeof(amd_l3_cache), "%dM", (int)(((edx >> 18) & 0x3FFF) * 0.5));
+        x86_info->l3_cache = amd_l3_cache;
     }
 
     return;
