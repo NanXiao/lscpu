@@ -11,8 +11,13 @@
 
 /* macro definitions */
 #define ARRAY_LEN(array) (sizeof(array) / sizeof(array[0]))
+
+#define CPUID_STANDARD_0_MASK   (0x00)
+#define CPUID_STANDARD_1_MASK   (0x01)
+
 #define CPUID_MAX_STANDARD_FUNCTION (0x17)
 #define CPUID_MAX_EXTENDED_FUNCTION (0x08)
+
 
 /* struct definitions */
 typedef struct
@@ -42,14 +47,28 @@ typedef struct
     unsigned char stepping;
     unsigned char model;
     unsigned short family;
-    char standard_flags[256];
+    char standard_flags[1024];
 } x86_cpu_info;
+
+
+/* function declarations */
+static int is_x86_cpu(char *arch);
+static int is_amd_cpu(char *vendor);
+static int is_intel_cpu(char *vendor);
+static int x86_cpu_support_standard_flag(int flag, int mask);
+static void get_x86_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len);
+static void get_x86_cpu_info(x86_cpu_info *x86_info);
+
+static void usage(void);
+static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info);
+
 
 /* variables definitions */
 gen_cpu_info gen_info;
 x86_cpu_info x86_info;
 
-/* function definitions*/
+
+/* function definitions */
 static int is_x86_cpu(char *arch)
 {
     return (!strcmp(arch, "i386") || !strcmp(arch, "amd64"));
@@ -65,57 +84,111 @@ static int is_intel_cpu(char *vendor)
     return !strcmp(vendor, "GenuineIntel");
 }
 
-static void get_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len)
+static int x86_cpu_support_standard_flag(int flag, int mask)
+{
+    return (flag & (1 << mask));
+}
+
+static void get_x86_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len)
 {
     snprintf(flags, len,
             /* edx*/
-            "%s%s%s%s%s%s%s%s"
-            "%s%s%s%s%s%s%s"
-            "%s%s%s%s%s%s%s"
-            "%s%s%s%s%s%s%s"
-            /* ecx */
-            "%s%s"
+            "%s%s%s%s"
+            "%s%s%s%s"
             "%s%s%s"
-            "%s%s"
-            "%s",
+            "%s%s%s%s"
+            "%s%s%s%s"
+            "%s%s%s"
+            "%s%s%s%s"
+            "%s%s%s"
+            
+            /* ecx */
+            "%s%s%s%s"
+            "%s%s%s%s"
+            "%s%s%s%s"
+            "%s%s%s%s"
+            "%s%s%s"
+            "%s%s%s%s"
+            "%s%s%s%s"
+            "%s%s%s%s",
+            
             edx & 0x00000001 ? "fpu " : "",
             edx & 0x00000002 ? "vme " : "",
             edx & 0x00000004 ? "de " : "",
             edx & 0x00000008 ? "pse " : "",
+            
             edx & 0x00000010 ? "msr " : "",
             edx & 0x00000020 ? "tsc " : "",
             edx & 0x00000040 ? "pae " : "",
             edx & 0x00000080 ? "mce " : "",
+            
             edx & 0x00000100 ? "cx8 " : "",
             edx & 0x00000200 ? "apic " : "",
             edx & 0x00000800 ? "sep " : "",
+            
             edx & 0x00001000 ? "mtrr " : "",
             edx & 0x00002000 ? "pge " : "",
             edx & 0x00004000 ? "mca " : "",
             edx & 0x00008000 ? "cmov " : "",
+            
             edx & 0x00010000 ? "pat " : "",
             edx & 0x00020000 ? "pse36 " : "",
             intel ? (edx & 0x00040000 ? "psn " : "") : "",
             edx & 0x00080000 ? "cflsh " : "",
+            
             intel ? (edx & 0x00200000 ? "ds " : "") : "",
             intel ? (edx & 0x00400000 ? "acpi " : "") : "",
             edx & 0x00800000 ? "mmx " : "",
+            
             edx & 0x01000000 ? "fxsr " : "",
             edx & 0x02000000 ? "sse " : "",
             edx & 0x04000000 ? "sse2 " : "",
             intel ? (edx & 0x08000000 ? "ss " : "") : "",
+            
             edx & 0x10000000 ? "htt " : "",
             intel ? (edx & 0x20000000 ? "tm " : "") : "",
             intel ? (edx & 0x80000000 ? "pbe " : "") : "",
 
             ecx & 0x00000001 ? "sse3 " : "",
-            intel ? (ecx & 0x00000008 ? "mwait " : "") : "",
-            intel ? (ecx & 0x00000010 ? "cpl " : "") : "",
+            ecx & 0x00000002 ? "pclmulqdq " : "",
+            intel ? (ecx & 0x00000004 ? "dtes64 " : "") : "",
+            ecx & 0x00000008 ? "monitor " : "",
+            
+            intel ? (ecx & 0x00000010 ? "ds_cpl " : "") : "",
             intel ? (ecx & 0x00000020 ? "vmx " : "") : "",
+            intel ? (ecx & 0x00000040 ? "smx " : "") : "",
             intel ? (ecx & 0x00000080 ? "est " : "") : "",
+            
             intel ? (ecx & 0x00000100 ? "tm2 " : "") : "",
-            intel ? (ecx & 0x00000400 ? "l1 " : "") : "",
-            ecx & 0x00002000 ? "cmpxchg16b " : "");
+            ecx & 0x00000200 ? "ssse3 " : "",
+            intel ? (ecx & 0x00000400 ? "cnxt-id " : "") : "",
+            intel ? (ecx & 0x00000800 ? "sdbg " : "") : "",
+
+            ecx & 0x00001000 ? "fma " : "",
+            ecx & 0x00002000 ? "cx16 " : "",
+            intel ? (ecx & 0x00004000 ? "xtpr " : "") : "",
+            intel ? (ecx & 0x00008000 ? "pdcm " : "") : "",
+
+            intel ? (ecx & 0x00020000 ? "pcid " : "") : "", 
+            intel ? (ecx & 0x00040000 ? "dca " : "") : "",
+            ecx & 0x00080000 ? "sse4_1 " : "",
+
+            ecx & 0x00100000 ? "sse4_2 " : "",
+            intel ? (ecx & 0x00200000 ? "x2apic " : "") : "", 
+            intel ? (ecx & 0x00400000 ? "movbe " : "") : "",
+            ecx & 0x00800000 ? "popcnt " : "",
+
+            intel ? (ecx & 0x01000000 ? "tsc_deadline " : "") : "",
+            ecx & 0x02000000 ? "aes " : "",
+            ecx & 0x04000000 ? "xsave " : "",
+            ecx & 0x08000000 ? "osxsave " : "",
+
+            ecx & 0x10000000 ? "avx " : "",
+            ecx & 0x20000000 ? "f16c " : "",
+            intel ? (ecx & 0x40000000 ? "rdrnd " : "") : "",
+            ecx & 0x80000000 ? "hypervisor " : "");
+
+        return;
 }
 
 static void get_x86_cpu_info(x86_cpu_info *x86_info)
@@ -132,7 +205,7 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         x86_info->standard_mask |= (1 << i);
     }
 
-    eax = 1;
+    eax = CPUID_STANDARD_1_MASK;
     if (x86_info->standard_mask & (1 << eax))
     {
         __cpuid (eax, eax, ebx, ecx, edx);
@@ -149,19 +222,58 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         }
         if (is_intel_cpu(x86_info->vendor))
         {
-            get_cpu_standard_flags(1, ecx, edx, x86_info->standard_flags, sizeof(x86_info->standard_flags));
+            get_x86_cpu_standard_flags(1, ecx, edx, x86_info->standard_flags, sizeof(x86_info->standard_flags));
         }
         else if (is_amd_cpu(x86_info->vendor))
         {
-            get_cpu_standard_flags(0, ecx, edx, x86_info->standard_flags, sizeof(x86_info->standard_flags));
+            get_x86_cpu_standard_flags(0, ecx, edx, x86_info->standard_flags, sizeof(x86_info->standard_flags));
         }
     }
+
+    return;
 }
 
 static void usage(void)
 {
     fprintf(stderr, "usage: lscpu [-h]\n");
     exit(1);
+}
+
+static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
+{
+    printf("%-16s %s\n", "Architecture:", gen_info->arch);
+    printf("%-16s %s\n", "Byte Order:", gen_info->byte_order == 1234 ? "Little Endian" : "Big Endian");    
+    printf("%-16s %d\n", "Active CPU(s):", gen_info->active_cpu_num);
+    printf("%-16s %d\n", "Total CPU(s):", gen_info->total_cpu_num);
+
+    if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_0_MASK))
+    {
+        printf("%-16s %s\n", "Vendor:", x86_info->vendor);
+    }
+    else 
+    {        
+        printf("%-16s %s\n", "Vendor:", gen_info->vendor);
+    }
+
+    if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_1_MASK))
+    {
+        printf("%-16s %d\n", "CPU family:", x86_info->family);
+        printf("%-16s %d\n", "Model:", x86_info->model);        
+    }
+    printf("%-16s %s\n", "Model name:", gen_info->model);
+    if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_1_MASK))
+    {   
+        printf("%-16s %d\n", "Stepping:", x86_info->stepping);
+    }
+
+    printf("%-16s %d\n", "CPU MHz:", gen_info->speed);
+
+    if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_1_MASK))
+    {
+        printf("%-16s %s\n", "Flags:", x86_info->standard_flags);
+    }
+
+    return;
 }
 
 int main(int argc, char **argv) 
@@ -213,30 +325,8 @@ int main(int argc, char **argv)
         get_x86_cpu_info(&x86_info);
     }
 
-    printf("%-16s %s\n", "Architecture:", gen_info.arch);
-    printf("%-16s %s\n", "Byte Order:", gen_info.byte_order == 1234 ? "Little Endian" : "Big Endian");    
-    printf("%-16s %d\n", "Active CPU(s):", gen_info.active_cpu_num);
-    printf("%-16s %d\n", "Total CPU(s):", gen_info.total_cpu_num);
-    if (is_x86_cpu(gen_info.arch))
-    {
-        printf("%-16s %s\n", "Vendor:", x86_info.vendor);
-        printf("%-16s %d\n", "CPU family:", x86_info.family);
-        printf("%-16s %d\n", "Model:", x86_info.model);        
-    }
-    else 
-    {        
-        printf("%-16s %s\n", "Vendor:", gen_info.vendor);
-    }
-    printf("%-16s %s\n", "Model name:", gen_info.model);
-    if (is_x86_cpu(gen_info.arch))
-    {   
-        printf("%-16s %d\n", "Stepping:", x86_info.stepping);
-    }
-    printf("%-16s %d\n", "CPU MHz:", gen_info.speed);
-    if (is_intel_cpu(x86_info.vendor) || is_amd_cpu(x86_info.vendor))
-    {
-        printf("%-16s %s\n", "Flags:", x86_info.standard_flags);
-    }
+    print_cpu_info(&gen_info, &x86_info);
+
     return 0;    
 }
 
