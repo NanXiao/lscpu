@@ -14,6 +14,7 @@
 
 #define CPUID_STANDARD_0_MASK   (0x00)
 #define CPUID_STANDARD_1_MASK   (0x01)
+#define CPUID_STANDARD_2_MASK   (0x02)
 
 #define CPUID_MAX_STANDARD_FUNCTION (0x17)
 #define CPUID_MAX_EXTENDED_FUNCTION (0x08)
@@ -47,6 +48,10 @@ typedef struct
     unsigned char stepping;
     unsigned char model;
     unsigned short family;
+    char *l1d_cache;
+    char *l1i_cache;
+    char *l2_cache;
+    char *l3_cache;
     char standard_flags[1024];
 } x86_cpu_info;
 
@@ -87,6 +92,192 @@ static int is_intel_cpu(char *vendor)
 static int x86_cpu_support_standard_flag(int flag, int mask)
 {
     return (flag & (1 << mask));
+}
+
+static void parse_intel_cache_value(x86_cpu_info *x86_info, unsigned char value)
+{
+    switch (value)
+    {
+        case 0x06:
+        {
+            x86_info->l1i_cache = "8K";
+            break;
+        }
+        case 0x08:
+        {
+            x86_info->l1i_cache = "16K";
+            break;
+        }
+        case 0x09:
+        case 0x30:
+        {
+            x86_info->l1i_cache = "32K";
+            break;
+        }
+        case 0x0A:
+        case 0x66:
+        {
+            x86_info->l1d_cache = "8K";
+            break;
+        }
+        case 0x0C:
+        case 0x0D:
+        case 0x60:
+        case 0x67:
+        {
+            x86_info->l1d_cache = "16K";
+            break;
+        }
+        case 0x68:
+        case 0x2C:
+        {
+            x86_info->l1d_cache = "32K";
+            break;
+        }
+        case 0x39:
+        case 0x3B:
+        case 0x41:
+        case 0x79:
+        {
+            x86_info->l2_cache = "128K";
+            break;
+        }
+        case 0x3A:
+        {
+            x86_info->l2_cache = "192K";
+            break;
+        }
+        case 0x3C:
+        case 0x42:
+        case 0x7A:
+        case 0x82:
+        {
+            x86_info->l2_cache = "256K";
+            break;
+        }
+        case 0x3D:
+        {
+            x86_info->l2_cache = "384K";
+            break;
+        }
+        case 0x3E:
+        case 0x43:
+        case 0x7B:
+        case 0x7F:
+        case 0x83:
+        case 0x86:
+        {
+            x86_info->l2_cache = "512K";
+            break;
+        }
+        case 0x44:
+        case 0x7C:
+        case 0x84:
+        case 0x87:
+        {
+            x86_info->l2_cache = "1M";
+            break;
+        }
+        case 0x45:
+        case 0x7D:
+        case 0x85:
+        {
+            x86_info->l2_cache = "2M";
+            break;
+        }
+        case 0x48:
+        {
+            x86_info->l2_cache = "3M";
+            break;
+        }
+        case 0x4E:
+        {
+            x86_info->l2_cache = "6M";
+            break;
+        }
+        case 0x49:
+        {
+            x86_info->l3_cache = x86_info->l2_cache = "4M";
+            break;
+        }
+        case 0xD0:
+        {
+            x86_info->l3_cache = "512K";
+            break;
+        }
+        case 0x23:
+        case 0xD1:
+        case 0xD6:
+        {
+            x86_info->l3_cache = "1M";
+            break;
+        }
+        case 0xDC:
+        {
+            x86_info->l3_cache = "1.5M";
+            break;
+        }
+        case 0xDD:
+        {
+            x86_info->l3_cache = "3M";
+            break;
+        }
+        case 0x25:
+        case 0xD2:
+        case 0xD7:
+        case 0xE2:
+        {
+            x86_info->l3_cache = "2M";
+            break;
+        }
+        case 0x29:
+        case 0x46:
+        case 0xD8:
+        case 0xE3:
+        {
+            x86_info->l3_cache = "4M";
+            break;
+        }
+        case 0x4A:
+        case 0xDE:
+        {
+            x86_info->l3_cache = "6M";
+            break;
+        }
+        case 0x47:
+        case 0x4B:
+        case 0xE4:
+        {
+            x86_info->l3_cache = "8M";
+            break;
+        }
+        case 0x4C:
+        case 0xEA:
+        {
+            x86_info->l3_cache = "12M";
+            break;
+        }
+        case 0x4D:
+        {
+            x86_info->l3_cache = "16M";
+            break;
+        }
+        case 0xEB:
+        {
+            x86_info->l3_cache = "18M";
+            break;
+        }
+        case 0xEC:
+        {
+            x86_info->l3_cache = "24M";
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+    return;
 }
 
 static void get_x86_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len)
@@ -196,7 +387,7 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
     int i = 0;
     uint32_t eax, ebx, ecx, edx;
     
-    __cpuid (0, eax, ebx, ecx, edx);
+    __cpuid(0, eax, ebx, ecx, edx);
     memcpy(x86_info->vendor, &ebx, sizeof(ebx));
     memcpy(&(x86_info->vendor[4]), &edx, sizeof(edx));
     memcpy(&(x86_info->vendor[8]), &ecx, sizeof(ecx));
@@ -208,7 +399,7 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
     eax = CPUID_STANDARD_1_MASK;
     if (x86_info->standard_mask & (1 << eax))
     {
-        __cpuid (eax, eax, ebx, ecx, edx);
+        __cpuid(eax, eax, ebx, ecx, edx);
         x86_info->stepping = eax & 0xF;
         x86_info->family = (eax >> 8) & 0xF;
         x86_info->model = (eax >> 4) & 0xF;
@@ -227,6 +418,32 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         else if (is_amd_cpu(x86_info->vendor))
         {
             get_x86_cpu_standard_flags(0, ecx, edx, x86_info->standard_flags, sizeof(x86_info->standard_flags));
+        }
+    }
+
+    eax = CPUID_STANDARD_2_MASK;
+    if ((is_intel_cpu(x86_info->vendor)) && (x86_info->standard_mask & (1 << eax)))
+    {
+        int i = 0, count = 0;
+        uint32_t cache[4]; /* eax, ebx, ecx, edx */
+        
+        __cpuid(eax, cache[0], cache[1], cache[2], cache[3]);
+        count = cache[0] & 0xFF;
+        while (count--)
+        {
+            for (i = 0; i < 4; i++)
+            {
+                if (!(cache[i] & 0x80000000))
+                {
+                    if (i)
+                    {
+                        parse_intel_cache_value(x86_info, cache[i] & 0xFF);
+                    }
+                    parse_intel_cache_value(x86_info, (cache[i] >> 8) & (0xFF));
+                    parse_intel_cache_value(x86_info, (cache[i] >> 16) & (0xFF));
+                    parse_intel_cache_value(x86_info, (cache[i] >> 24) & (0xFF));
+                }
+            }
         }
     }
 
@@ -268,6 +485,23 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
 
     printf("%-16s %d\n", "CPU MHz:", gen_info->speed);
 
+    if (x86_info->l1d_cache)
+    {
+        printf("%-16s %s\n", "L1d cache:", x86_info->l1d_cache);
+    }
+    if (x86_info->l1i_cache)
+    {
+        printf("%-16s %s\n", "L1i cache:", x86_info->l1i_cache);
+    }
+    if (x86_info->l2_cache)
+    {
+        printf("%-16s %s\n", "L2 cache:", x86_info->l2_cache);
+    }
+    if (x86_info->l3_cache)
+    {
+        printf("%-16s %s\n", "L3 cache:", x86_info->l3_cache);
+    }
+    
     if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_1_MASK))
     {
         printf("%-16s %s\n", "Flags:", x86_info->standard_flags);
