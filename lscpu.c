@@ -314,8 +314,8 @@ static void get_x86_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, ch
             edx & 0x00000004 ? "de " : "",
             edx & 0x00000008 ? "pse " : "",
             
-            edx & 0x00000010 ? "msr " : "",
-            edx & 0x00000020 ? "tsc " : "",
+            edx & 0x00000010 ? "tsc " : "",
+            edx & 0x00000020 ? "msr " : "",
             edx & 0x00000040 ? "pae " : "",
             edx & 0x00000080 ? "mce " : "",
             
@@ -382,7 +382,7 @@ static void get_x86_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, ch
 
             ecx & 0x10000000 ? "avx " : "",
             ecx & 0x20000000 ? "f16c " : "",
-            intel ? (ecx & 0x40000000 ? "rdrnd " : "") : "",
+            ecx & 0x40000000 ? "rdrnd " : "",
             ecx & 0x80000000 ? "hypervisor " : "");
 
         return;
