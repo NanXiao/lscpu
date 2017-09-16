@@ -676,7 +676,7 @@ int main(int argc, char **argv)
         mib[1] = sysctl_array[i].mib_code;
         if (sysctl(mib, ARRAY_LEN(mib), sysctl_array[i].old, &sysctl_array[i].old_len, NULL, 0) == -1)
         {
-            err(1, sysctl_array[i].err_msg);
+            err(1, "%s", sysctl_array[i].err_msg);
         }
     }
 
