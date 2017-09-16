@@ -574,9 +574,13 @@ static void usage(void)
 static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
 {
     printf("%-16s %s\n", "Architecture:", gen_info->arch);
-    printf("%-16s %s\n", "Byte Order:", gen_info->byte_order == 1234 ? "Little Endian" : "Big Endian");    
+    printf("%-16s %s\n", "Byte Order:", gen_info->byte_order == 1234 ? "Little Endian" : "Big Endian");
+#ifdef __OpenBSD__
     printf("%-16s %d\n", "Active CPU(s):", gen_info->active_cpu_num);
     printf("%-16s %d\n", "Total CPU(s):", gen_info->total_cpu_num);
+#else /* __FreeBSD__ */
+    printf("%-16s %d\n", "Total CPU(s):", gen_info->active_cpu_num);
+#endif
 
     if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_0_MASK))
     {
@@ -584,7 +588,9 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
     }
     else 
     {        
+#ifdef __OpenBSD__
         printf("%-16s %s\n", "Vendor:", gen_info->vendor);
+#endif
     }
 
     if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_1_MASK))
@@ -598,7 +604,9 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
         printf("%-16s %d\n", "Stepping:", x86_info->stepping);
     }
 
+#ifdef __OpenBSD__
     printf("%-16s %d\n", "CPU MHz:", gen_info->speed);
+#endif
 
     if (x86_info->l1d_cache)
     {
@@ -633,10 +641,13 @@ int main(int argc, char **argv)
         {HW_MACHINE, gen_info.arch, sizeof(gen_info.arch), "HW_MACHINE"},
         {HW_BYTEORDER, &(gen_info.byte_order), sizeof(gen_info.byte_order), "HW_BYTEORDER"},
         {HW_MODEL, gen_info.model, sizeof(gen_info.model), "HW_MODEL"},
-        {HW_VENDOR, gen_info.vendor, sizeof(gen_info.vendor), "HW_VENDOR"},
         {HW_NCPU, &(gen_info.active_cpu_num), sizeof(gen_info.active_cpu_num), "HW_NCPU"},
+#ifdef __OpenBSD__
+        {HW_VENDOR, gen_info.vendor, sizeof(gen_info.vendor), "HW_VENDOR"},
         {HW_NCPUFOUND, &(gen_info.total_cpu_num), sizeof(gen_info.total_cpu_num), "HW_NCPUFOUND"},
-        {HW_CPUSPEED, &(gen_info.speed), sizeof(gen_info.speed), "HW_CPUSPEED"},};
+        {HW_CPUSPEED, &(gen_info.speed), sizeof(gen_info.speed), "HW_CPUSPEED"},
+#endif
+    };
 
     while ((ch = getopt(argc, argv, "h")) != -1) 
     {
@@ -650,7 +661,7 @@ int main(int argc, char **argv)
             }
         }
     }
-    
+
     argc -= optind;
     argv += optind;
 
@@ -665,7 +676,8 @@ int main(int argc, char **argv)
         mib[1] = sysctl_array[i].mib_code;
         if (sysctl(mib, ARRAY_LEN(mib), sysctl_array[i].old, &sysctl_array[i].old_len, NULL, 0) == -1)
         {
-            err(1, sysctl_array[i].err_msg);
+            perror(sysctl_array[i].err_msg);
+            exit(1);
         }
     }
 
@@ -676,6 +688,6 @@ int main(int argc, char **argv)
 
     print_cpu_info(&gen_info, &x86_info);
 
-    return 0;    
+    return 0;
 }
 
