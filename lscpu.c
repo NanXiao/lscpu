@@ -15,6 +15,8 @@
 #define CPUID_STANDARD_0_MASK   (0x00)
 #define CPUID_STANDARD_1_MASK   (0x01)
 #define CPUID_STANDARD_2_MASK   (0x02)
+#define CPUID_STANDARD_7_MASK   (0x07)
+
 
 #define CPUID_EXTENDED_5_MASK   (0x05)
 #define CPUID_EXTENDED_6_MASK   (0x06)
@@ -54,7 +56,7 @@ typedef struct
     char *l1i_cache;
     char *l2_cache;
     char *l3_cache;
-    char standard_flags[1024];
+    char flags[2048];
 } x86_cpu_info;
 
 
@@ -63,7 +65,8 @@ static int is_x86_cpu(char *arch);
 static int is_amd_cpu(char *vendor);
 static int is_intel_cpu(char *vendor);
 static int x86_cpu_support_standard_flag(int flag, int mask);
-static void get_x86_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len);
+static int get_x86_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len);
+static int get_x86_cpu_structured_extended_flags(int intel, uint32_t ebx, uint32_t ecx, char *flags, size_t len);
 static void get_x86_cpu_info(x86_cpu_info *x86_info);
 
 static void usage(void);
@@ -286,111 +289,172 @@ static void parse_intel_cache_value(x86_cpu_info *x86_info, unsigned char value)
     return;
 }
 
-static void get_x86_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len)
+static int get_x86_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len)
 {
-    snprintf(flags, len,
-            /* edx*/
-            "%s%s%s%s"
-            "%s%s%s%s"
-            "%s%s%s"
-            "%s%s%s%s"
-            "%s%s%s%s"
-            "%s%s%s"
-            "%s%s%s%s"
-            "%s%s%s"
-            
-            /* ecx */
-            "%s%s%s%s"
-            "%s%s%s%s"
-            "%s%s%s%s"
-            "%s%s%s%s"
-            "%s%s%s"
-            "%s%s%s%s"
-            "%s%s%s%s"
-            "%s%s%s%s",
-            
-            edx & 0x00000001 ? "fpu " : "",
-            edx & 0x00000002 ? "vme " : "",
-            edx & 0x00000004 ? "de " : "",
-            edx & 0x00000008 ? "pse " : "",
-            
-            edx & 0x00000010 ? "tsc " : "",
-            edx & 0x00000020 ? "msr " : "",
-            edx & 0x00000040 ? "pae " : "",
-            edx & 0x00000080 ? "mce " : "",
-            
-            edx & 0x00000100 ? "cx8 " : "",
-            edx & 0x00000200 ? "apic " : "",
-            edx & 0x00000800 ? "sep " : "",
-            
-            edx & 0x00001000 ? "mtrr " : "",
-            edx & 0x00002000 ? "pge " : "",
-            edx & 0x00004000 ? "mca " : "",
-            edx & 0x00008000 ? "cmov " : "",
-            
-            edx & 0x00010000 ? "pat " : "",
-            edx & 0x00020000 ? "pse36 " : "",
-            intel ? (edx & 0x00040000 ? "psn " : "") : "",
-            edx & 0x00080000 ? "cflsh " : "",
-            
-            intel ? (edx & 0x00200000 ? "ds " : "") : "",
-            intel ? (edx & 0x00400000 ? "acpi " : "") : "",
-            edx & 0x00800000 ? "mmx " : "",
-            
-            edx & 0x01000000 ? "fxsr " : "",
-            edx & 0x02000000 ? "sse " : "",
-            edx & 0x04000000 ? "sse2 " : "",
-            intel ? (edx & 0x08000000 ? "ss " : "") : "",
-            
-            edx & 0x10000000 ? "htt " : "",
-            intel ? (edx & 0x20000000 ? "tm " : "") : "",
-            intel ? (edx & 0x80000000 ? "pbe " : "") : "",
+    return snprintf(flags, len,
+                /* edx*/
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s"
+                
+                /* ecx */
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s%s",
 
-            ecx & 0x00000001 ? "sse3 " : "",
-            ecx & 0x00000002 ? "pclmulqdq " : "",
-            intel ? (ecx & 0x00000004 ? "dtes64 " : "") : "",
-            ecx & 0x00000008 ? "monitor " : "",
-            
-            intel ? (ecx & 0x00000010 ? "ds_cpl " : "") : "",
-            intel ? (ecx & 0x00000020 ? "vmx " : "") : "",
-            intel ? (ecx & 0x00000040 ? "smx " : "") : "",
-            intel ? (ecx & 0x00000080 ? "est " : "") : "",
-            
-            intel ? (ecx & 0x00000100 ? "tm2 " : "") : "",
-            ecx & 0x00000200 ? "ssse3 " : "",
-            intel ? (ecx & 0x00000400 ? "cnxt-id " : "") : "",
-            intel ? (ecx & 0x00000800 ? "sdbg " : "") : "",
+                edx & 0x00000001 ? "fpu " : "",
+                edx & 0x00000002 ? "vme " : "",
+                edx & 0x00000004 ? "de " : "",
+                edx & 0x00000008 ? "pse " : "",
+                
+                edx & 0x00000010 ? "tsc " : "",
+                edx & 0x00000020 ? "msr " : "",
+                edx & 0x00000040 ? "pae " : "",
+                edx & 0x00000080 ? "mce " : "",
+                
+                edx & 0x00000100 ? "cx8 " : "",
+                edx & 0x00000200 ? "apic " : "",
+                edx & 0x00000800 ? "sep " : "",
+                
+                edx & 0x00001000 ? "mtrr " : "",
+                edx & 0x00002000 ? "pge " : "",
+                edx & 0x00004000 ? "mca " : "",
+                edx & 0x00008000 ? "cmov " : "",
+                
+                edx & 0x00010000 ? "pat " : "",
+                edx & 0x00020000 ? "pse36 " : "",
+                intel ? (edx & 0x00040000 ? "psn " : "") : "",
+                edx & 0x00080000 ? "cflsh " : "",
+                
+                intel ? (edx & 0x00200000 ? "ds " : "") : "",
+                intel ? (edx & 0x00400000 ? "acpi " : "") : "",
+                edx & 0x00800000 ? "mmx " : "",
+                
+                edx & 0x01000000 ? "fxsr " : "",
+                edx & 0x02000000 ? "sse " : "",
+                edx & 0x04000000 ? "sse2 " : "",
+                intel ? (edx & 0x08000000 ? "ss " : "") : "",
+                
+                edx & 0x10000000 ? "htt " : "",
+                intel ? (edx & 0x20000000 ? "tm " : "") : "",
+                intel ? (edx & 0x80000000 ? "pbe " : "") : "",
 
-            ecx & 0x00001000 ? "fma " : "",
-            ecx & 0x00002000 ? "cx16 " : "",
-            intel ? (ecx & 0x00004000 ? "xtpr " : "") : "",
-            intel ? (ecx & 0x00008000 ? "pdcm " : "") : "",
+                ecx & 0x00000001 ? "sse3 " : "",
+                ecx & 0x00000002 ? "pclmulqdq " : "",
+                intel ? (ecx & 0x00000004 ? "dtes64 " : "") : "",
+                ecx & 0x00000008 ? "monitor " : "",
+                
+                intel ? (ecx & 0x00000010 ? "ds_cpl " : "") : "",
+                intel ? (ecx & 0x00000020 ? "vmx " : "") : "",
+                intel ? (ecx & 0x00000040 ? "smx " : "") : "",
+                intel ? (ecx & 0x00000080 ? "est " : "") : "",
+                
+                intel ? (ecx & 0x00000100 ? "tm2 " : "") : "",
+                ecx & 0x00000200 ? "ssse3 " : "",
+                intel ? (ecx & 0x00000400 ? "cnxt-id " : "") : "",
+                intel ? (ecx & 0x00000800 ? "sdbg " : "") : "",
 
-            intel ? (ecx & 0x00020000 ? "pcid " : "") : "", 
-            intel ? (ecx & 0x00040000 ? "dca " : "") : "",
-            ecx & 0x00080000 ? "sse4_1 " : "",
+                ecx & 0x00001000 ? "fma " : "",
+                ecx & 0x00002000 ? "cx16 " : "",
+                intel ? (ecx & 0x00004000 ? "xtpr " : "") : "",
+                intel ? (ecx & 0x00008000 ? "pdcm " : "") : "",
 
-            ecx & 0x00100000 ? "sse4_2 " : "",
-            intel ? (ecx & 0x00200000 ? "x2apic " : "") : "", 
-            intel ? (ecx & 0x00400000 ? "movbe " : "") : "",
-            ecx & 0x00800000 ? "popcnt " : "",
+                intel ? (ecx & 0x00020000 ? "pcid " : "") : "", 
+                intel ? (ecx & 0x00040000 ? "dca " : "") : "",
+                ecx & 0x00080000 ? "sse4_1 " : "",
 
-            intel ? (ecx & 0x01000000 ? "tsc_deadline " : "") : "",
-            ecx & 0x02000000 ? "aes " : "",
-            ecx & 0x04000000 ? "xsave " : "",
-            ecx & 0x08000000 ? "osxsave " : "",
+                ecx & 0x00100000 ? "sse4_2 " : "",
+                intel ? (ecx & 0x00200000 ? "x2apic " : "") : "", 
+                intel ? (ecx & 0x00400000 ? "movbe " : "") : "",
+                ecx & 0x00800000 ? "popcnt " : "",
 
-            ecx & 0x10000000 ? "avx " : "",
-            ecx & 0x20000000 ? "f16c " : "",
-            ecx & 0x40000000 ? "rdrnd " : "",
-            ecx & 0x80000000 ? "hypervisor " : "");
+                intel ? (ecx & 0x01000000 ? "tsc_deadline " : "") : "",
+                ecx & 0x02000000 ? "aes " : "",
+                ecx & 0x04000000 ? "xsave " : "",
+                ecx & 0x08000000 ? "osxsave " : "",
 
-        return;
+                ecx & 0x10000000 ? "avx " : "",
+                ecx & 0x20000000 ? "f16c " : "",
+                ecx & 0x40000000 ? "rdrnd " : "",
+                ecx & 0x80000000 ? "hypervisor " : "");
 }
+
+static int get_x86_cpu_structured_extended_flags(int intel, uint32_t ebx, uint32_t ecx, char *flags, size_t len)
+{
+    return snprintf(flags, len,
+                /* ebx */
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s"
+                "%s%s"
+                "%s"
+                /* ecx */
+                "%s%s%s"
+                "%s"
+                "%s"
+                "%s",
+
+                ebx & 0x00000001 ? "fsgsbase " : "",
+                intel ? (ebx & 0x00000002 ? "tsc_adjust " : "") : "",
+                intel ? (ebx & 0x00000004 ? "sgx " : "") : "",
+                ebx & 0x00000008 ? "bmi1 " : "",
+
+                intel ? (ebx & 0x00000010 ? "hle " : "") : "",
+                ebx & 0x00000020 ? "avx2 " : "",
+                intel ? (ebx & 0x00000040 ? "fp_dp " : "") : "",
+                ebx & 0x00000080 ? "smep " : "",
+
+                ebx & 0x00000100 ? "bmi2 " : "",
+                intel ? (ebx & 0x00000200 ? "erms " : "") : "",
+                intel ? (ebx & 0x00000400 ? "invpcid " : "") : "",
+                intel ? (ebx & 0x00000800 ? "rtm " : "") : "",
+                
+                intel ? (ebx & 0x00001000 ? "pqm " : "") : "",
+                intel ? (ebx & 0x00002000 ? "fpcsds " : "") : "",
+                intel ? (ebx & 0x00004000 ? "mpx " : "") : "",
+                intel ? (ebx & 0x00008000 ? "pqe " : "") : "",
+
+                intel ? (ebx & 0x00010000 ? "pat " : "") : "",
+                intel ? (ebx & 0x00020000 ? "pse36 " : "") : "",
+                intel ? (ebx & 0x00040000 ? "rdseed " : "") : "",
+                intel ? (ebx & 0x00080000 ? "adx " : "") : "",
+
+                intel ? (ebx & 0x00100000 ? "smap " : "") : "",
+                intel ? (ebx & 0x00800000 ? "clflushopt " : "") : "",
+
+                intel ? (ebx & 0x01000000 ? "clwb " : "") : "",
+                intel ? (ebx & 0x02000000 ? "intel_pt " : "") : "",
+
+                intel ? (ebx & 0x10000000 ? "sha " : "") : "",
+
+                intel ? (ecx & 0x00000001 ? "prefetchwt1 " : "") : "",
+                intel ? (ecx & 0x00000004 ? "umip " : "") : "",
+                intel ? (ecx & 0x00000008 ? "pku " : "") : "",
+
+                intel ? (ecx & 0x00000010 ? "ospke " : "") : "",
+
+                intel ? (ecx & 0x00040000 ? "rdpid " : "") : "",
+
+                intel ? (ecx & 0x40000000 ? "sgx_lc " : "") : "");
+}
+
 
 static void get_x86_cpu_info(x86_cpu_info *x86_info)
 {
-    int i = 0;
+    int i = 0, flag_len = 0;
     uint32_t eax, ebx, ecx, edx;
     
     __cpuid(0, eax, ebx, ecx, edx);
@@ -402,12 +466,12 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         x86_info->standard_mask |= (1 << i);
     }
 
-	__cpuid(0x80000000, eax, ebx, ecx, edx);
-	for (i = 0; (i <= eax) && (i <= CPUID_MAX_EXTENDED_FUNCTION); i++)
+    __cpuid(0x80000000, eax, ebx, ecx, edx);
+    for (i = 0; (i <= eax) && (i <= CPUID_MAX_EXTENDED_FUNCTION); i++)
     {
         x86_info->extended_mask |= (1 << i);
     }
-	
+
     eax = CPUID_STANDARD_1_MASK;
     if (x86_info->standard_mask & (1 << eax))
     {
@@ -425,11 +489,11 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         }
         if (is_intel_cpu(x86_info->vendor))
         {
-            get_x86_cpu_standard_flags(1, ecx, edx, x86_info->standard_flags, sizeof(x86_info->standard_flags));
+            flag_len += get_x86_cpu_standard_flags(1, ecx, edx, x86_info->flags + flag_len, sizeof(x86_info->flags) - flag_len);
         }
         else if (is_amd_cpu(x86_info->vendor))
         {
-            get_x86_cpu_standard_flags(0, ecx, edx, x86_info->standard_flags, sizeof(x86_info->standard_flags));
+            flag_len += get_x86_cpu_standard_flags(0, ecx, edx, x86_info->flags + flag_len, sizeof(x86_info->flags) - flag_len);
         }
     }
 
@@ -459,14 +523,29 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         }
     }
 
+    eax = CPUID_STANDARD_7_MASK;
+    ecx = 0;
+    if (x86_info->standard_mask & (1 << eax))
+    {
+        __cpuid(eax, eax, ebx, ecx, edx);
+        if (is_intel_cpu(x86_info->vendor))
+        {
+            flag_len += get_x86_cpu_structured_extended_flags(1, ebx, ecx, x86_info->flags + flag_len, sizeof(x86_info->flags) - flag_len);
+        }
+        else if (is_amd_cpu(x86_info->vendor))
+        {
+            flag_len += get_x86_cpu_structured_extended_flags(0, ebx, ecx, x86_info->flags + flag_len, sizeof(x86_info->flags) - flag_len);
+        }
+    }
+
     eax = CPUID_EXTENDED_5_MASK;
     if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << eax)))
     {
         __cpuid(eax, eax, ebx, ecx, edx);
-        
+
         snprintf(amd_l1d_cache, sizeof(amd_l1d_cache), "%dK", ((ecx >> 24) & 0xFF));
         x86_info->l1d_cache = amd_l1d_cache;
-        
+
         snprintf(amd_l1i_cache, sizeof(amd_l1i_cache), "%dK", ((edx >> 24) & 0xFF));
         x86_info->l1i_cache = amd_l1i_cache;
     }
@@ -475,11 +554,11 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
     if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << eax)))
     {
         __cpuid(eax, eax, ebx, ecx, edx);
-        
+
         snprintf(amd_l2_cache, sizeof(amd_l2_cache), "%dK", ((ecx >> 16) & 0xFFFF));
         x86_info->l2_cache = amd_l2_cache;
-        
-        snprintf(amd_l3_cache, sizeof(amd_l3_cache), "%dM", (int)(((edx >> 18) & 0x3FFF) * 0.5));
+
+        snprintf(amd_l3_cache, sizeof(amd_l3_cache), "%dM", (int)(((edx >> 18) & 0x3FFF) * 0.512));
         x86_info->l3_cache = amd_l3_cache;
     }
 
@@ -537,10 +616,10 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
     {
         printf("%-16s %s\n", "L3 cache:", x86_info->l3_cache);
     }
-    
-    if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_1_MASK))
+
+    if (x86_info->flags[0])
     {
-        printf("%-16s %s\n", "Flags:", x86_info->standard_flags);
+        printf("%-16s %s\n", "Flags:", x86_info->flags);
     }
 
     return;
