@@ -16,7 +16,7 @@
 #define CPUID_STANDARD_2_MASK   (0x02)
 #define CPUID_STANDARD_7_MASK   (0x07)
 
-
+#define CPUID_EXTENDED_1_MASK   (0x01)
 #define CPUID_EXTENDED_5_MASK   (0x05)
 #define CPUID_EXTENDED_6_MASK   (0x06)
 
@@ -66,6 +66,7 @@ static int is_intel_cpu(char *vendor);
 static int x86_cpu_support_standard_flag(int flag, int mask);
 static int get_x86_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len);
 static int get_x86_cpu_structured_extended_flags(int intel, uint32_t ebx, uint32_t ecx, char *flags, size_t len);
+static int get_x86_cpu_extended_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len);
 static void get_x86_cpu_info(x86_cpu_info *x86_info);
 
 static void usage(void);
@@ -450,6 +451,78 @@ static int get_x86_cpu_structured_extended_flags(int intel, uint32_t ebx, uint32
                 intel ? (ecx & 0x40000000 ? "sgx_lc " : "") : "");
 }
 
+static int get_x86_cpu_extended_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len)
+{
+    return snprintf(flags, len,
+                /* edx*/
+                ""
+                ""
+                "%s"
+                ""
+                "%s"
+                "%s%s"
+                "%s%s%s"
+                "%s%s%s"
+                
+                /* ecx */
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s%s"
+                "%s%s%s"
+                "%s%s%s"
+                "%s%s%s"
+                "%s%s%s"
+                "%s",
+
+                edx & 0x00000800 ? "syscall " : "",
+
+                intel ? "" : (edx & 0x00080000 ? "mp " : ""),
+
+                edx & 0x00100000 ? "nx " : "",
+                intel ? "" : (edx & 0x00400000 ? "mmxext " : ""),
+
+                intel ? "" : (edx & 0x02000000 ? "fxsr_opt " : ""),
+                edx & 0x04000000 ? "pdpe1gb " : "",
+                edx & 0x08000000 ? "rdtscp " : "",
+
+                edx & 0x20000000 ? "lm " : "",
+                intel ? "" : (edx & 0x40000000 ? "3dnowext " : ""),
+                intel ? "" : (edx & 0x80000000 ? "3dnow " : ""),
+
+                ecx & 0x00000001 ? "lahf_lm " : "",
+                intel ? "" : (ecx & 0x00000002 ? "cmp_legacy " : ""),
+                intel ? "" : (ecx & 0x00000004 ? "svm " : ""),
+                intel ? "" : (ecx & 0x00000008 ? "extapic " : ""),
+
+                intel ? "" : (ecx & 0x00000010 ? "cr8_legacy " : ""),
+                ecx & 0x00000020 ? "lzcnt " : "",
+                intel ? "" : (ecx & 0x00000040 ? "sse4a " : ""),
+                intel ? "" : (ecx & 0x00000080 ? "misalignsse " : ""),
+
+                intel ? "" : (ecx & 0x00000100 ? "3dnowprefetch " : ""),
+                intel ? "" : (ecx & 0x00000200 ? "osvw " : ""),
+                intel ? "" : (ecx & 0x00000400 ? "ibs " : ""),
+                intel ? "" : (ecx & 0x00000800 ? "xop " : ""),
+
+                intel ? "" : (ecx & 0x00001000 ? "skinit " : ""),
+                intel ? "" : (ecx & 0x00002000 ? "wdt " : ""),
+                intel ? "" : (ecx & 0x00008000 ? "lwp " : ""),
+
+                intel ? "" : (ecx & 0x00010000 ? "fma4 " : ""),
+                intel ? "" : (ecx & 0x00020000 ? "tce " : ""),
+                intel ? "" : (ecx & 0x00080000 ? "nodeid_msr " : ""),
+
+                intel ? "" : (ecx & 0x00200000 ? "tbm " : ""),
+                intel ? "" : (ecx & 0x00400000 ? "topoext " : ""),
+                intel ? "" : (ecx & 0x00800000 ? "perfctr_core " : ""),
+
+                intel ? "" : (ecx & 0x01000000 ? "perfctr_nb " : ""),
+                intel ? "" : (ecx & 0x02000000 ? "dbx " : ""),
+                intel ? "" : (ecx & 0x08000000 ? "perftsc " : ""),
+
+                intel ? "" : (ecx & 0x10000000 ? "pcx_l2i " : ""));
+}
+
 
 static void get_x86_cpu_info(x86_cpu_info *x86_info)
 {
@@ -534,6 +607,20 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         else if (is_amd_cpu(x86_info->vendor))
         {
             flag_len += get_x86_cpu_structured_extended_flags(0, ebx, ecx, x86_info->flags + flag_len, sizeof(x86_info->flags) - flag_len);
+        }
+    }
+
+    eax = CPUID_EXTENDED_1_MASK;
+    if (x86_info->extended_mask & (1 << eax))
+    {
+        __cpuid(eax, eax, ebx, ecx, edx);
+        if (is_intel_cpu(x86_info->vendor))
+        {
+            flag_len += get_x86_cpu_extended_flags(1, ecx, edx, x86_info->flags + flag_len, sizeof(x86_info->flags) - flag_len);
+        }
+        else if (is_amd_cpu(x86_info->vendor))
+        {
+            flag_len += get_x86_cpu_extended_flags(0, ecx, edx, x86_info->flags + flag_len, sizeof(x86_info->flags) - flag_len);
         }
     }
 
@@ -675,7 +762,7 @@ int main(int argc, char **argv)
         mib[1] = sysctl_array[i].mib_code;
         if (sysctl(mib, ARRAY_LEN(mib), sysctl_array[i].old, &sysctl_array[i].old_len, NULL, 0) == -1)
         {
-            err(1, "%s", sysctl_array[i].err_msg);
+            err(1, sysctl_array[i].err_msg);
         }
     }
 
