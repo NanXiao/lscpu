@@ -24,4 +24,5 @@ lscpu for OpenBSD/FreeBSD.
 	L1d cache:       32K
 	L1i cache:       32K
 	L2 cache:        3M
-	Flags:           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 cflsh ds acpi mmx fxsr sse sse2 ss htt tm pbe sse3 dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm sse4_1 xsave osxsave
+	Flags:           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 cflsh ds acpi mmx fxsr sse sse2 ss htt tm pbe sse3 dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm sse4_1 xsave osxsave syscall pdpe1gb rdtscp lm lahf_lm lzcnt
+
