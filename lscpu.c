@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <err.h>
-#include <machine/cpu.h>
 #include <cpuid.h>
 
 /* macro definitions */
