@@ -48,6 +48,7 @@ typedef struct
 {
     int standard_mask;
     int extended_mask;
+    int intel_use_leaf_4_get_cache;
     char vendor[13];
     unsigned char stepping;
     unsigned char model;
@@ -284,6 +285,11 @@ static void parse_intel_cache_value(x86_cpu_info *x86_info, unsigned char value)
         case 0xEC:
         {
             x86_info->l3_cache = "24M";
+            break;
+        }
+        case 0xFF:
+        {
+            x86_info->intel_use_leaf_4_get_cache = 1;
             break;
         }
         default:
@@ -600,15 +606,15 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         }
     }
 
-    eax = CPUID_STANDARD_4_MASK;
-    if ((is_intel_cpu(x86_info->vendor)) && (x86_info->standard_mask & (1 << eax)))
+    if ((is_intel_cpu(x86_info->vendor)) && (x86_info->standard_mask & (1 << eax)) && (x86_info->intel_use_leaf_4_get_cache))
     {
-        for (ecx = 0; ; ecx++)
+        int subleaf = 0;
+        for (subleaf = 0; ; subleaf++)
         {
             unsigned char cache_type = 0, cache_level = 0;
             int cache_size;
-            
-            __cpuid(eax, eax, ebx, ecx, edx);
+
+            __cpuid_count(CPUID_STANDARD_4_MASK, subleaf, eax, ebx, ecx, edx);
             
             cache_type = eax & 0x1F;
             if (!cache_type)
@@ -617,7 +623,7 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
             }
 
             cache_size = (int)((((ebx >> 22) & 0x3FF) + 1) * (((ebx >> 10) & 0x3FF) + 1) * 
-                            ((ebx & 0xFFF) + 1) * (ecx + 1) / 1000);
+                            ((ebx & 0xFFF) + 1) * (ecx + 1) / 1024);
             cache_level = (eax >> 5) & 0x7;
             switch (cache_level)
             {
@@ -648,7 +654,7 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
                 {
                     if (cache_type == 3)
                     {
-                        snprintf(intel_l3_cache, sizeof(intel_l3_cache), "%dK", cache_size);
+                        snprintf(intel_l3_cache, sizeof(intel_l3_cache), "%dM", cache_size / 1024);
                         x86_info->l3_cache = intel_l3_cache;
                     }
                     break;
@@ -831,7 +837,7 @@ int main(int argc, char **argv)
             err(1, "%s", sysctl_array[i].err_msg);
         }
     }
-    
+
     if (is_x86_cpu(gen_info.arch))
     {
         get_x86_cpu_info(&x86_info);
