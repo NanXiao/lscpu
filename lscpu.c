@@ -14,6 +14,7 @@
 #define CPUID_STANDARD_0_MASK   (0x00)
 #define CPUID_STANDARD_1_MASK   (0x01)
 #define CPUID_STANDARD_2_MASK   (0x02)
+#define CPUID_STANDARD_4_MASK   (0x04)
 #define CPUID_STANDARD_7_MASK   (0x07)
 
 #define CPUID_EXTENDED_1_MASK   (0x01)
@@ -76,6 +77,10 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info);
 /* variables definitions */
 gen_cpu_info gen_info;
 x86_cpu_info x86_info;
+char intel_l1d_cache[8];
+char intel_l1i_cache[8];
+char intel_l2_cache[8];
+char intel_l3_cache[8];
 char amd_l1d_cache[8];
 char amd_l1i_cache[8];
 char amd_l2_cache[8];
@@ -595,6 +600,67 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         }
     }
 
+    eax = CPUID_STANDARD_4_MASK;
+    if ((is_intel_cpu(x86_info->vendor)) && (x86_info->standard_mask & (1 << eax)))
+    {
+        for (ecx = 0; ; ecx++)
+        {
+            unsigned char cache_type = 0, cache_level = 0;
+            int cache_size;
+            
+            __cpuid(eax, eax, ebx, ecx, edx);
+            
+            cache_type = eax & 0x1F;
+            if (!cache_type)
+            {
+                break;
+            }
+
+            cache_size = (int)((((ebx >> 22) & 0x3FF) + 1) * (((ebx >> 10) & 0x3FF) + 1) * 
+                            ((ebx & 0xFFF) + 1) * (ecx + 1) / 1000);
+            cache_level = (eax >> 5) & 0x7;
+            switch (cache_level)
+            {
+                case 1:
+                {
+                    if (cache_type == 1)
+                    {
+                        snprintf(intel_l1d_cache, sizeof(intel_l1d_cache), "%dK", cache_size);
+                        x86_info->l1d_cache = intel_l1d_cache;
+                    }
+                    else if (cache_type == 2)
+                    {
+                        snprintf(intel_l1i_cache, sizeof(intel_l1i_cache), "%dK", cache_size);
+                        x86_info->l1i_cache = intel_l1i_cache;
+                    }
+                    break;
+                }
+                case 2:
+                {
+                    if (cache_type == 3)
+                    {
+                        snprintf(intel_l2_cache, sizeof(intel_l2_cache), "%dK", cache_size);
+                        x86_info->l2_cache = intel_l2_cache;
+                    }
+                    break;
+                }
+                case 3:
+                {
+                    if (cache_type == 3)
+                    {
+                        snprintf(intel_l3_cache, sizeof(intel_l3_cache), "%dK", cache_size);
+                        x86_info->l3_cache = intel_l3_cache;
+                    }
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+            }
+        }
+    }
+
     eax = CPUID_STANDARD_7_MASK;
     ecx = 0;
     if (x86_info->standard_mask & (1 << eax))
@@ -765,7 +831,7 @@ int main(int argc, char **argv)
             err(1, "%s", sysctl_array[i].err_msg);
         }
     }
-
+    
     if (is_x86_cpu(gen_info.arch))
     {
         get_x86_cpu_info(&x86_info);
