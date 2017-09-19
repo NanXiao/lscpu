@@ -717,10 +717,9 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         }
     }
 
-    eax = CPUID_EXTENDED_1_MASK;
-    if (x86_info->extended_mask & (1 << eax))
+    if (x86_info->extended_mask & (1 << CPUID_EXTENDED_1_MASK))
     {
-        __cpuid(eax, eax, ebx, ecx, edx);
+        __cpuid(0x80000000 | CPUID_EXTENDED_1_MASK, eax, ebx, ecx, edx);
         if (is_intel_cpu(x86_info->vendor))
         {
             flag_len += get_x86_cpu_extended_flags(1, ecx, edx, x86_info->flags + flag_len, sizeof(x86_info->flags) - flag_len);
@@ -731,10 +730,9 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         }
     }
 
-    eax = CPUID_EXTENDED_5_MASK;
-    if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << eax)))
+    if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << CPUID_EXTENDED_5_MASK)))
     {
-        __cpuid(eax, eax, ebx, ecx, edx);
+        __cpuid(0x80000000 | CPUID_EXTENDED_5_MASK, eax, ebx, ecx, edx);
 
         snprintf(amd_l1d_cache, sizeof(amd_l1d_cache), "%dK", ((ecx >> 24) & 0xFF));
         x86_info->l1d_cache = amd_l1d_cache;
@@ -743,10 +741,9 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         x86_info->l1i_cache = amd_l1i_cache;
     }
 
-    eax = CPUID_EXTENDED_6_MASK;
-    if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << eax)))
+    if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << CPUID_EXTENDED_5_MASK)))
     {
-        __cpuid(eax, eax, ebx, ecx, edx);
+        __cpuid(0x80000000 | CPUID_EXTENDED_6_MASK, eax, ebx, ecx, edx);
 
         snprintf(amd_l2_cache, sizeof(amd_l2_cache), "%dK", ((ecx >> 16) & 0xFFFF));
         x86_info->l2_cache = amd_l2_cache;
