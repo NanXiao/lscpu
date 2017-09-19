@@ -11,18 +11,22 @@ lscpu for OpenBSD/FreeBSD.
 ## Output
 
 	$ ./lscpu
-	Architecture:    amd64
-	Byte Order:      Little Endian
-	Active CPU(s):   2
-	Total CPU(s):    2
-	Vendor:          GenuineIntel
-	CPU family:      6
-	Model:           23
-	Model name:      Intel(R) Core(TM)2 Duo CPU P8700 @ 2.53GHz
-	Stepping:        10
-	CPU MHz:         2534
-	L1d cache:       32K
-	L1i cache:       32K
-	L2 cache:        3M
-	Flags:           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 cflsh ds acpi mmx fxsr sse sse2 ss htt tm pbe sse3 dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm sse4_1 xsave osxsave syscall pdpe1gb rdtscp lm lahf_lm lzcnt
+	Architecture:            i386
+	Byte Order:              Little Endian
+	Active CPU(s):           2
+	Total CPU(s):            2
+	Thread(s) per core:      1
+	Core(s) per socket:      2
+	Socket(s):               1
+	Vendor:                  GenuineIntel
+	CPU family:              6
+	Model:                   63
+	Model name:              Intel(R) Xeon(R) CPU E5-2620 v3 @ 2.40GHz ("GenuineIntel" 686-class)
+	Stepping:                2
+	CPU MHz:                 2401
+	L1d cache:               32K
+	L1i cache:               32K
+	L2 cache:                256K
+	L3 cache:                15M
+	Flags:                   fpu vme de pse tsc msr mce cx8 apic sep mtrr pge mca cmov pat pse36 cflsh mmx fxsr sse sse2 htt sse3 pclmulqdq ssse3 cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx rdrnd fpcsds syscall pdpe1gb lahf_lm
 
