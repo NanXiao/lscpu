@@ -10,13 +10,15 @@
 #include <cpuid.h>
 
 /* macro definitions */
-#define ARRAY_LEN(array) (sizeof(array) / sizeof(array[0]))
+#define ARRAY_LEN(array)    (sizeof(array) / sizeof(array[0]))
 
 #define CPUID_STANDARD_0_MASK   (0x00)
 #define CPUID_STANDARD_1_MASK   (0x01)
 #define CPUID_STANDARD_2_MASK   (0x02)
 #define CPUID_STANDARD_4_MASK   (0x04)
 #define CPUID_STANDARD_7_MASK   (0x07)
+#define CPUID_STANDARD_B_MASK   (0x0B)
+
 
 #define CPUID_EXTENDED_1_MASK   (0x01)
 #define CPUID_EXTENDED_5_MASK   (0x05)
@@ -54,6 +56,8 @@ typedef struct
     unsigned char stepping;
     unsigned char model;
     unsigned short family;
+    int threads_per_core;
+    int cores_per_socket;
     char *l1d_cache;
     char *l1i_cache;
     char *l2_cache;
@@ -683,6 +687,36 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         }
     }
 
+    if (x86_info->standard_mask & (1 << CPUID_STANDARD_B_MASK))
+    {
+        int subleaf = 0;
+        for (subleaf = 0; ; subleaf++)
+        {
+            int level_type = 0;
+            __cpuid_count(CPUID_STANDARD_B_MASK, subleaf, eax, ebx, ecx, edx);
+            
+            if (!eax && !ebx)
+            {
+                break;
+            }
+
+            level_type = (ecx >> 8) & 0xFF;
+            if (level_type == 1)
+            {
+                x86_info->threads_per_core = ebx;
+            }
+            else if (level_type == 2)
+            {
+                x86_info->cores_per_socket = ebx;
+            }
+        }
+
+        if (x86_info->threads_per_core)
+        {
+            x86_info->cores_per_socket = x86_info->cores_per_socket / x86_info->threads_per_core;
+        }
+    }
+
     eax = CPUID_EXTENDED_1_MASK;
     if (x86_info->extended_mask & (1 << eax))
     {
@@ -732,61 +766,81 @@ static void usage(void)
 
 static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
 {
-    printf("%-16s %s\n", "Architecture:", gen_info->arch);
-    printf("%-16s %s\n", "Byte Order:", gen_info->byte_order == 1234 ? "Little Endian" : "Big Endian");
+    printf("%-24s %s\n", "Architecture:", gen_info->arch);
+    printf("%-24s %s\n", "Byte Order:", gen_info->byte_order == 1234 ? "Little Endian" : "Big Endian");
 #ifdef __OpenBSD__
-    printf("%-16s %d\n", "Active CPU(s):", gen_info->active_cpu_num);
-    printf("%-16s %d\n", "Total CPU(s):", gen_info->total_cpu_num);
+    printf("%-24s %d\n", "Active CPU(s):", gen_info->active_cpu_num);
+    printf("%-24s %d\n", "Total CPU(s):", gen_info->total_cpu_num);
 #else /* __FreeBSD__ */
-    printf("%-16s %d\n", "Total CPU(s):", gen_info->active_cpu_num);
+    printf("%-24s %d\n", "Total CPU(s):", gen_info->active_cpu_num);
 #endif
+
+    if (x86_info->threads_per_core)
+    {
+        printf("%-24s %d\n", "Thread(s) per core:", x86_info->threads_per_core);
+    }
+
+    if (x86_info->cores_per_socket)
+    {
+        printf("%-24s %d\n", "Core(s) per socket:", x86_info->cores_per_socket);
+    }
+
+    if ((x86_info->threads_per_core) && (x86_info->cores_per_socket))
+    {
+#ifdef __OpenBSD__
+        int total_cpu_num = gen_info->total_cpu_num;
+#else /* __FreeBSD__ */
+        int total_cpu_num = gen_info->total_cpu_num;
+#endif
+    printf("%-24s %d\n", "Socket(s):", total_cpu_num / ((x86_info->threads_per_core) * (x86_info->cores_per_socket)));
+    }
 
     if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_0_MASK))
     {
-        printf("%-16s %s\n", "Vendor:", x86_info->vendor);
+        printf("%-24s %s\n", "Vendor:", x86_info->vendor);
     }
     else 
     {        
 #ifdef __OpenBSD__
-        printf("%-16s %s\n", "Vendor:", gen_info->vendor);
+        printf("%-24s %s\n", "Vendor:", gen_info->vendor);
 #endif
     }
 
     if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_1_MASK))
     {
-        printf("%-16s %d\n", "CPU family:", x86_info->family);
-        printf("%-16s %d\n", "Model:", x86_info->model);        
+        printf("%-24s %d\n", "CPU family:", x86_info->family);
+        printf("%-24s %d\n", "Model:", x86_info->model);        
     }
-    printf("%-16s %s\n", "Model name:", gen_info->model);
+    printf("%-24s %s\n", "Model name:", gen_info->model);
     if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_1_MASK))
     {   
-        printf("%-16s %d\n", "Stepping:", x86_info->stepping);
+        printf("%-24s %d\n", "Stepping:", x86_info->stepping);
     }
 
 #ifdef __OpenBSD__
-    printf("%-16s %d\n", "CPU MHz:", gen_info->speed);
+    printf("%-24s %d\n", "CPU MHz:", gen_info->speed);
 #endif
 
     if (x86_info->l1d_cache)
     {
-        printf("%-16s %s\n", "L1d cache:", x86_info->l1d_cache);
+        printf("%-24s %s\n", "L1d cache:", x86_info->l1d_cache);
     }
     if (x86_info->l1i_cache)
     {
-        printf("%-16s %s\n", "L1i cache:", x86_info->l1i_cache);
+        printf("%-24s %s\n", "L1i cache:", x86_info->l1i_cache);
     }
     if (x86_info->l2_cache)
     {
-        printf("%-16s %s\n", "L2 cache:", x86_info->l2_cache);
+        printf("%-24s %s\n", "L2 cache:", x86_info->l2_cache);
     }
     if (x86_info->l3_cache)
     {
-        printf("%-16s %s\n", "L3 cache:", x86_info->l3_cache);
+        printf("%-24s %s\n", "L3 cache:", x86_info->l3_cache);
     }
 
     if (x86_info->flags[0])
     {
-        printf("%-16s %s\n", "Flags:", x86_info->flags);
+        printf("%-24s %s\n", "Flags:", x86_info->flags);
     }
 
     return;
