@@ -1,5 +1,6 @@
 #include <sys/param.h> 
 #include <sys/sysctl.h>
+#include <errno.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -29,7 +30,7 @@ typedef struct
 {
     char arch[16];
     int byte_order;
-    char model[64];
+    char model[128];
     char vendor[32];
     int active_cpu_num;
     int total_cpu_num;
@@ -834,6 +835,10 @@ int main(int argc, char **argv)
         mib[1] = sysctl_array[i].mib_code;
         if (sysctl(mib, ARRAY_LEN(mib), sysctl_array[i].old, &sysctl_array[i].old_len, NULL, 0) == -1)
         {
+            if (errno == EOPNOTSUPP)
+            {
+                continue;
+            }
             err(1, "%s", sysctl_array[i].err_msg);
         }
     }
