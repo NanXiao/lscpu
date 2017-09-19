@@ -842,9 +842,9 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
     {
         /* Remove last space */
         size_t len = strlen(x86_info->flags);
-        if (x86_info->flags[len] == ' ')
+        if (x86_info->flags[len - 1] == ' ')
         {
-            x86_info->flags[len] = 0;
+            x86_info->flags[len - 1] = '\0';
         }
         printf("%-24s %s\n", "Flags:", x86_info->flags);
     }
