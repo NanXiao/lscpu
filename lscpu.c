@@ -755,6 +755,11 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         x86_info->l3_cache = amd_l3_cache;
     }
 
+    /* Remove last space */
+    if (flag_len && (x86_info->flags[flag_len - 1] == ' '))
+    {
+        x86_info->flags[flag_len - 1] = '\0';
+    }
     return;
 }
 
@@ -840,12 +845,6 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
 
     if (x86_info->flags[0])
     {
-        /* Remove last space */
-        size_t len = strlen(x86_info->flags);
-        if (x86_info->flags[len - 1] == ' ')
-        {
-            x86_info->flags[len - 1] = '\0';
-        }
         printf("%-24s %s\n", "Flags:", x86_info->flags);
     }
 
