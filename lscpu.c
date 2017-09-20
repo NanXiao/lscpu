@@ -10,6 +10,8 @@
 #include <cpuid.h>
 
 /* macro definitions */
+#define CACHE_SIZE_LEN  (8)
+
 #define ARRAY_LEN(array)    (sizeof(array) / sizeof(array[0]))
 
 #define CPUID_STANDARD_0_MASK   (0x00)
@@ -85,14 +87,14 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info);
 /* variables definitions */
 gen_cpu_info gen_info;
 x86_cpu_info x86_info;
-char intel_l1d_cache[8];
-char intel_l1i_cache[8];
-char intel_l2_cache[8];
-char intel_l3_cache[8];
-char amd_l1d_cache[8];
-char amd_l1i_cache[8];
-char amd_l2_cache[8];
-char amd_l3_cache[8];
+char intel_l1d_cache[CACHE_SIZE_LEN];
+char intel_l1i_cache[CACHE_SIZE_LEN];
+char intel_l2_cache[CACHE_SIZE_LEN];
+char intel_l3_cache[CACHE_SIZE_LEN];
+char amd_l1d_cache[CACHE_SIZE_LEN];
+char amd_l1i_cache[CACHE_SIZE_LEN];
+char amd_l2_cache[CACHE_SIZE_LEN];
+char amd_l3_cache[CACHE_SIZE_LEN];
 
 
 /* function definitions */
