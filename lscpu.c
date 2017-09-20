@@ -23,6 +23,8 @@
 #define CPUID_EXTENDED_1_MASK   (0x01)
 #define CPUID_EXTENDED_5_MASK   (0x05)
 #define CPUID_EXTENDED_6_MASK   (0x06)
+#define CPUID_EXTENDED_8_MASK   (0x08)
+
 
 #define CPUID_MAX_STANDARD_FUNCTION (0x17)
 #define CPUID_MAX_EXTENDED_FUNCTION (0x08)
@@ -687,7 +689,7 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         }
     }
 
-    if (x86_info->standard_mask & (1 << CPUID_STANDARD_B_MASK))
+    if ((is_intel_cpu(x86_info->vendor)) && (x86_info->standard_mask & (1 << CPUID_STANDARD_B_MASK)))
     {
         int subleaf = 0;
         for (subleaf = 0; ; subleaf++)
@@ -752,6 +754,19 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         x86_info->l3_cache = amd_l3_cache;
     }
 
+    if (is_amd_cpu(x86_info->vendor))
+    {
+        /* AMD doesn't support Hyper-Threading */
+        x86_info->threads_per_core = 1;
+        x86_info->cores_per_socket = 1;
+
+        if (x86_info->extended_mask & (1 << CPUID_EXTENDED_8_MASK))
+        {
+            __cpuid(0x80000000 | CPUID_EXTENDED_8_MASK, eax, ebx, ecx, edx);
+            x86_info->cores_per_socket = (ecx & 0xFF) + 1;
+        }
+    }
+    
     /* Remove last space */
     if (flag_len && (x86_info->flags[flag_len - 1] == ' '))
     {
