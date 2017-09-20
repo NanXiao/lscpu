@@ -576,7 +576,7 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
             x86_info->model |= (eax >> 12) & 0xF0;
             if (x86_info->family == 15)
             {
-                x86_info->family |= (eax >> 16) & 0xFF0;
+                x86_info->family += (eax >> 20) & 0xFF;
             }
         }
         if (is_intel_cpu(x86_info->vendor))
@@ -633,6 +633,11 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
 
             cache_size = (int)((((ebx >> 22) & 0x3FF) + 1) * (((ebx >> 10) & 0x3FF) + 1) * 
                             ((ebx & 0xFFF) + 1) * (ecx + 1) / 1024);
+            if (!cache_size)
+            {
+                break;
+            }
+
             cache_level = (eax >> 5) & 0x7;
             switch (cache_level)
             {
@@ -744,13 +749,22 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
 
     if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << CPUID_EXTENDED_5_MASK)))
     {
+        int kilo_size = 0;
         __cpuid(0x80000000 | CPUID_EXTENDED_5_MASK, eax, ebx, ecx, edx);
 
-        snprintf(amd_l1d_cache, sizeof(amd_l1d_cache), "%dK", ((ecx >> 24) & 0xFF));
-        x86_info->l1d_cache = amd_l1d_cache;
+        kilo_size = (ecx >> 24) & 0xFF;
+        if (!kilo_size)
+        {
+            snprintf(amd_l1d_cache, sizeof(amd_l1d_cache), "%dK", kilo_size);
+            x86_info->l1d_cache = amd_l1d_cache;
+        }
 
-        snprintf(amd_l1i_cache, sizeof(amd_l1i_cache), "%dK", ((edx >> 24) & 0xFF));
-        x86_info->l1i_cache = amd_l1i_cache;
+        kilo_size = (edx >> 24) & 0xFF;
+        if (!kilo_size)
+        {
+            snprintf(amd_l1i_cache, sizeof(amd_l1i_cache), "%dK", kilo_size);
+            x86_info->l1i_cache = amd_l1i_cache;
+        }
     }
 
     if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << CPUID_EXTENDED_5_MASK)))
@@ -759,21 +773,28 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
 
         __cpuid(0x80000000 | CPUID_EXTENDED_6_MASK, eax, ebx, ecx, edx);
 
-        snprintf(amd_l2_cache, sizeof(amd_l2_cache), "%dK", ((ecx >> 16) & 0xFFFF));
-        x86_info->l2_cache = amd_l2_cache;
+        kilo_size = (ecx >> 16) & 0xFFFF;
+        if (!kilo_size)
+        {
+            snprintf(amd_l2_cache, sizeof(amd_l2_cache), "%dK", kilo_size);
+            x86_info->l2_cache = amd_l2_cache;
+        }
 
         kilo_size = ((edx >> 18) & 0x3FFF) * 512;
-        mega_size = kilo_size / 1024;
+        if (!kilo_size)
+        {
+            mega_size = kilo_size / 1024;
 
-        if (mega_size)
-        {
-            snprintf(amd_l3_cache, sizeof(amd_l3_cache), "%dM", mega_size);
+            if (mega_size)
+            {
+                snprintf(amd_l3_cache, sizeof(amd_l3_cache), "%dM", mega_size);
+            }
+            else
+            {
+                snprintf(amd_l3_cache, sizeof(amd_l3_cache), "%dK", kilo_size);
+            }
+            x86_info->l3_cache = amd_l3_cache;
         }
-        else
-        {
-            snprintf(amd_l3_cache, sizeof(amd_l3_cache), "%dK", kilo_size);
-        }
-        x86_info->l3_cache = amd_l3_cache;
     }
 
     if (is_amd_cpu(x86_info->vendor))
@@ -829,9 +850,9 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
 #ifdef __OpenBSD__
         int total_cpu_num = gen_info->total_cpu_num;
 #else /* __FreeBSD__ */
-        int total_cpu_num = gen_info->total_cpu_num;
+        int total_cpu_num = gen_info->active_cpu_num;
 #endif
-    printf("%-24s %d\n", "Socket(s):", total_cpu_num / ((x86_info->threads_per_core) * (x86_info->cores_per_socket)));
+        printf("%-24s %d\n", "Socket(s):", total_cpu_num / ((x86_info->threads_per_core) * (x86_info->cores_per_socket)));
     }
 
     if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_0_MASK))
