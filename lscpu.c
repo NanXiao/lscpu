@@ -661,7 +661,15 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
                 {
                     if (cache_type == 3)
                     {
-                        snprintf(intel_l3_cache, sizeof(intel_l3_cache), "%dM", cache_size / 1024);
+                        int mega_size = cache_size / 1024;
+                        if (mega_size)
+                        {
+                            snprintf(intel_l3_cache, sizeof(intel_l3_cache), "%dM", cache_size / 1024);
+                        }
+                        else
+                        {
+                            snprintf(intel_l3_cache, sizeof(intel_l3_cache), "%dK", cache_size);
+                        }
                         x86_info->l3_cache = intel_l3_cache;
                     }
                     break;
@@ -745,12 +753,24 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
 
     if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << CPUID_EXTENDED_5_MASK)))
     {
+        int kilo_size = 0, mega_size = 0;
+
         __cpuid(0x80000000 | CPUID_EXTENDED_6_MASK, eax, ebx, ecx, edx);
 
         snprintf(amd_l2_cache, sizeof(amd_l2_cache), "%dK", ((ecx >> 16) & 0xFFFF));
         x86_info->l2_cache = amd_l2_cache;
 
-        snprintf(amd_l3_cache, sizeof(amd_l3_cache), "%dM", (int)(((edx >> 18) & 0x3FFF) * 0.512));
+        kilo_size = ((edx >> 18) & 0x3FFF) * 512;
+        mega_size = kilo_size / 1024;
+
+        if (mega_size)
+        {
+            snprintf(amd_l3_cache, sizeof(amd_l3_cache), "%dM", mega_size);
+        }
+        else
+        {
+            snprintf(amd_l3_cache, sizeof(amd_l3_cache), "%dK", kilo_size);
+        }
         x86_info->l3_cache = amd_l3_cache;
     }
 
