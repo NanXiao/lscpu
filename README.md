@@ -29,4 +29,7 @@ lscpu for OpenBSD/FreeBSD.
 	L2 cache:                256K
 	L3 cache:                15M
 	Flags:                   fpu vme de pse tsc msr mce cx8 apic sep mtrr pge mca cmov pat pse36 cflsh mmx fxsr sse sse2 htt sse3 pclmulqdq ssse3 cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx rdrnd fpcsds syscall pdpe1gb lahf_lm
+## Acknowledgement
+Thanks for [yggdr](https://github.com/yggdr)'s testing on `AMD` processors.
+
 
