@@ -753,35 +753,35 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
         __cpuid(0x80000000 | CPUID_EXTENDED_5_MASK, eax, ebx, ecx, edx);
 
         kilo_size = (ecx >> 24) & 0xFF;
-        if (!kilo_size)
+        if (kilo_size)
         {
             snprintf(amd_l1d_cache, sizeof(amd_l1d_cache), "%dK", kilo_size);
             x86_info->l1d_cache = amd_l1d_cache;
         }
 
         kilo_size = (edx >> 24) & 0xFF;
-        if (!kilo_size)
+        if (kilo_size)
         {
             snprintf(amd_l1i_cache, sizeof(amd_l1i_cache), "%dK", kilo_size);
             x86_info->l1i_cache = amd_l1i_cache;
         }
     }
 
-    if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << CPUID_EXTENDED_5_MASK)))
+    if ((is_amd_cpu(x86_info->vendor)) && (x86_info->extended_mask & (1 << CPUID_EXTENDED_6_MASK)))
     {
         int kilo_size = 0, mega_size = 0;
 
         __cpuid(0x80000000 | CPUID_EXTENDED_6_MASK, eax, ebx, ecx, edx);
 
         kilo_size = (ecx >> 16) & 0xFFFF;
-        if (!kilo_size)
+        if (kilo_size)
         {
             snprintf(amd_l2_cache, sizeof(amd_l2_cache), "%dK", kilo_size);
             x86_info->l2_cache = amd_l2_cache;
         }
 
         kilo_size = ((edx >> 18) & 0x3FFF) * 512;
-        if (!kilo_size)
+        if (kilo_size)
         {
             mega_size = kilo_size / 1024;
 
