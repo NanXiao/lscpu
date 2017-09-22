@@ -559,6 +559,7 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
     }
 
     __cpuid(0x80000000, eax, ebx, ecx, edx);
+    eax &= ~0x80000000;
     for (i = 0; (i <= eax) && (i <= CPUID_MAX_EXTENDED_FUNCTION); i++)
     {
         x86_info->extended_mask |= (1 << i);
