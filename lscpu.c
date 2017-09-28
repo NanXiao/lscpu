@@ -100,7 +100,7 @@ char amd_l3_cache[CACHE_SIZE_LEN];
 /* function definitions */
 static int is_x86_cpu(char *arch)
 {
-    return (!strcmp(arch, "i386") || !strcmp(arch, "amd64"));
+    return (!strcmp(arch, "i386") || !strcmp(arch, "amd64") || !strcmp(arch, "x86_64"));
 }
 
 static int is_amd_cpu(char *vendor)
