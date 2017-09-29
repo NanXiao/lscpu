@@ -1,5 +1,5 @@
 # lscpu
-lscpu for OpenBSD/FreeBSD/NetBSD/macOS.  
+lscpu for OpenBSD/FreeBSD/NetBSD/macOS(It should also work on other BSDs, though not tested).  
 
 ## Usage
 
