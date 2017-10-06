@@ -1,5 +1,5 @@
 # lscpu
-lscpu for OpenBSD/FreeBSD/NetBSD/DragonFlyBSD/macOS(It should also work on other BSDs, though not tested).  
+lscpu for OpenBSD/FreeBSD/NetBSD/DragonFlyBSD/MidnightBSD/macOS(It should also work on other BSDs, though not tested).  
 
 ## Usage
 
@@ -33,5 +33,6 @@ lscpu for OpenBSD/FreeBSD/NetBSD/DragonFlyBSD/macOS(It should also work on other
 Thanks for [yggdr](https://github.com/yggdr)'s testing on AMD processors.  
 Thanks for [bit_of_hope](https://www.reddit.com/r/BSD/comments/72bi57/lscpu_for_openbsdfreebsd/dnhnifm/)'s testing on NetBSD.  
 Thanks for Aleksej Lebedev's testing on DragonFlyBSD.  
+Thanks for [Lucas Holt](https://github.com/laffer1)'s testing on MidnightBSD.  
 Thanks for [zi0r](https://github.com/zi0r)'s adding to [FreeBSD ports tree](https://www.freshports.org/sysutils/lscpu).
 
