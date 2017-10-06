@@ -1,7 +1,14 @@
 # lscpu
 lscpu for BSDs. The main usage of this program should be for x86 architecture since it leverages [CPUID](https://en.wikipedia.org/wiki/CPUID) instruction. For other architectures, it just shows very limited facts.  
 
-lscpu has been proved to work on OpenBSD/FreeBSD/NetBSD/DragonFlyBSD/MidnightBSD/macOS, and it should also works on other BSDs, though not tested. If you find lscpu can also works on other BSD distros, welcome to tell me through [mail](mailto:nan@chinadtrace.org) or just open a new [issue](https://github.com/NanXiao/lscpu/issues/new), thanks very much in advance!  
+lscpu has been verified to work on following BSDs:  
+
+<table>
+  <tr><td>macOS</td><td>OpenBSD</td><td>FreeBSD</td><td>NetBSD</td></tr>
+  <tr><td>DragonFlyBSD</td><td>MidnightBSD</td><td>?</td><td></td></tr>
+</table>
+
+It should also works on other BSDs, though not tested. If you find lscpu can also runs on other BSD distros, welcome to tell me through [mail](mailto:nan@chinadtrace.org) or just open a new [issue](https://github.com/NanXiao/lscpu/issues/new), thanks very much in advance!  
 
 ## Usage
 
