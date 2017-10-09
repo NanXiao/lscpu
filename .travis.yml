@@ -1,3 +1,5 @@
+language: c
+
 os: osx
 
 script: make
