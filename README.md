@@ -42,6 +42,6 @@ It should also works on other BSDs, though not tested. If you find lscpu can als
 Thanks for [yggdr](https://github.com/yggdr)'s testing on AMD processors.  
 Thanks for [bit_of_hope](https://www.reddit.com/r/BSD/comments/72bi57/lscpu_for_openbsdfreebsd/dnhnifm/)'s testing on NetBSD.  
 Thanks for Aleksej Lebedev's testing on DragonFlyBSD.  
-Thanks for [Lucas Holt](https://github.com/laffer1)'s testing on MidnightBSD.  
-Thanks for [zi0r](https://github.com/zi0r)'s adding to [FreeBSD ports tree](https://www.freshports.org/sysutils/lscpu).
+Thanks for [Lucas Holt](https://github.com/laffer1)'s testing on MidnightBSD and add lscpu to [MidnightBSD mports tree](http://svn.midnightbsd.org/svn/mports/trunk/sysutils/lscpu/).  
+Thanks for [zi0r](https://github.com/zi0r)'s adding lscpu to [FreeBSD ports tree](https://www.freshports.org/sysutils/lscpu).
 
