@@ -8,6 +8,7 @@
 #include <string.h>
 #include <err.h>
 #include <cpuid.h>
+#include <getopt.h>
 
 /* macro definitions */
 #define CACHE_SIZE_LEN  (8)
@@ -821,7 +822,7 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
 
 static void usage(void)
 {
-    fprintf(stderr, "usage: lscpu [-h]\n");
+    fprintf(stderr, "usage: lscpu [-h|--help]\n");
     exit(1);
 }
 
@@ -911,6 +912,11 @@ int main(int argc, char **argv)
 {
     int mib[2], ch = 0, i = 0;
 
+    struct option longopts[] = {
+        {"help", no_argument, NULL, 'h'},
+        {NULL, 0, NULL, 0}
+    };
+
     sysctl_get_cpu_info sysctl_array[] = {
         {HW_MACHINE, gen_info.arch, sizeof(gen_info.arch), "HW_MACHINE"},
         {HW_BYTEORDER, &(gen_info.byte_order), sizeof(gen_info.byte_order), "HW_BYTEORDER"},
@@ -923,7 +929,7 @@ int main(int argc, char **argv)
 #endif
     };
 
-    while ((ch = getopt(argc, argv, "h")) != -1) 
+    while ((ch = getopt_long(argc, argv, "h", longopts, NULL)) != -1) 
     {
         switch (ch)
         {
