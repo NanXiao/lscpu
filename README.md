@@ -39,8 +39,9 @@ It should also work on other BSDs, though not tested. If you find lscpu also run
 	L3 cache:                15M
 	Flags:                   fpu vme de pse tsc msr mce cx8 apic sep mtrr pge mca cmov pat pse36 cflsh mmx fxsr sse sse2 htt sse3 pclmulqdq ssse3 cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx rdrnd fpcsds syscall pdpe1gb lahf_lm
 ## Acknowledgement
-Thanks to [yggdr](https://github.com/yggdr) for testing on AMD processors.
-Thanks to [bit_of_hope](https://www.reddit.com/r/BSD/comments/72bi57/lscpu_for_openbsdfreebsd/dnhnifm/) for testing on NetBSD.
-Thanks to Aleksej Lebedev for testing on DragonFlyBSD.
-Thanks to [Lucas Holt](https://github.com/laffer1) for testing on MidnightBSD and adding lscpu to the [MidnightBSD mports tree](http://svn.midnightbsd.org/svn/mports/trunk/sysutils/lscpu/).
-Thanks to [zi0r](https://github.com/zi0r) for adding lscpu to the [FreeBSD ports tree](https://www.freshports.org/sysutils/lscpu).
+Thanks to [yggdr](https://github.com/yggdr) for testing on AMD processors.  
+Thanks to [bit_of_hope](https://www.reddit.com/r/BSD/comments/72bi57/lscpu_for_openbsdfreebsd/dnhnifm/) for testing on NetBSD.  
+Thanks to Aleksej Lebedev for testing on DragonFlyBSD.  
+Thanks to [Lucas Holt](https://github.com/laffer1) for testing on MidnightBSD and adding lscpu to the [MidnightBSD mports tree](http://svn.midnightbsd.org/svn/mports/trunk/sysutils/lscpu/).  
+Thanks to [zi0r](https://github.com/zi0r) for adding lscpu to the [FreeBSD ports tree](https://www.freshports.org/sysutils/lscpu).  
+Thanks to [Brian Callahan](https://github.com/ibara) for adding lscpu to the [OpenBSD ports tree](https://cvsweb.openbsd.org/cgi-bin/cvsweb/ports/sysutils/lscpu/).
