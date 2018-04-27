@@ -1,10 +1,26 @@
-.TH LSCPU 1
-.SH NAME
-lscpu \- display CPU information
-.SH SYNOPSIS
-.B lscpu [-h|--help]
-.SH DESCRIPTION
-.B lscpu
-displays CPU information for the system.
-.SH EXIT STATUS
-The \fBlscpu\fR utility exits 0 on success, and >0 if an error occurs.
+.Dd April 27, 2018
+.Dt LSCPU 1
+.Os
+.Sh NAME
+.Nm lscpu
+.Nd display CPU information
+.Sh SYNOPSIS
+.Nm
+.Op Fl h|--help
+.Sh DESCRIPTION
+.Nm
+is a utility that displays CPU information for the system.
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl h|--help
+Print usage information and exit.
+.El
+.Sh EXIT STATUS
+The
+.Nm
+utility exits 0 on success, and >0 if an error occurs.
+.Sh AUTHORS
+.Nm
+was written by
+.An Nan Xiao Aq Mt nan@chinadtrace.org .
