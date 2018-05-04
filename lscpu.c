@@ -7,8 +7,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <err.h>
-#include <cpuid.h>
 #include <getopt.h>
+
+#if defined(__amd64__) || defined(__i386__)
+#include <cpuid.h>
+#endif
 
 /* macro definitions */
 #define CACHE_SIZE_LEN  (8)
@@ -72,7 +75,7 @@ typedef struct
 
 
 /* function declarations */
-static int is_x86_cpu(char *arch);
+#if defined(__amd64__) || defined(__i386__)
 static int is_amd_cpu(char *vendor);
 static int is_intel_cpu(char *vendor);
 static int x86_cpu_support_standard_flag(int flag, int mask);
@@ -80,6 +83,7 @@ static int get_x86_cpu_standard_flags(int intel, uint32_t ecx, uint32_t edx, cha
 static int get_x86_cpu_structured_extended_flags(int intel, uint32_t ebx, uint32_t ecx, char *flags, size_t len);
 static int get_x86_cpu_extended_flags(int intel, uint32_t ecx, uint32_t edx, char *flags, size_t len);
 static void get_x86_cpu_info(x86_cpu_info *x86_info);
+#endif
 
 static void usage(void);
 static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info);
@@ -99,11 +103,7 @@ char amd_l3_cache[CACHE_SIZE_LEN];
 
 
 /* function definitions */
-static int is_x86_cpu(char *arch)
-{
-    return (!strcmp(arch, "i386") || !strcmp(arch, "amd64") || !strcmp(arch, "x86_64"));
-}
-
+#if defined(__amd64__) || defined(__i386__)
 static int is_amd_cpu(char *vendor)
 {
     return (!strcmp(vendor, "AMDisbetter!") || !strcmp(vendor, "AuthenticAMD"));
@@ -819,6 +819,7 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
     }
     return;
 }
+#endif
 
 static void usage(void)
 {
@@ -837,6 +838,7 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
     printf("%-24s %d\n", "Total CPU(s):", gen_info->active_cpu_num);
 #endif
 
+#if defined(__amd64__) || defined(__i386__)
     if (x86_info->threads_per_core)
     {
         printf("%-24s %d\n", "Thread(s) per core:", x86_info->threads_per_core);
@@ -904,6 +906,7 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
     {
         printf("%-24s %s\n", "Flags:", x86_info->flags);
     }
+#endif
 
     return;
 }
@@ -964,10 +967,9 @@ int main(int argc, char **argv)
         }
     }
 
-    if (is_x86_cpu(gen_info.arch))
-    {
-        get_x86_cpu_info(&x86_info);
-    }
+#if defined(__amd64__) || defined(__i386__)
+    get_x86_cpu_info(&x86_info);
+#endif
 
     print_cpu_info(&gen_info, &x86_info);
 
