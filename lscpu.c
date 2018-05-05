@@ -863,8 +863,8 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
     {
         printf("%-24s %s\n", "Vendor:", x86_info->vendor);
     }
-    else 
-    {        
+    else
+    {
 #ifdef __OpenBSD__
         printf("%-24s %s\n", "Vendor:", gen_info->vendor);
 #endif
@@ -873,7 +873,7 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
     if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_1_MASK))
     {
         printf("%-24s %d\n", "CPU family:", x86_info->family);
-        printf("%-24s %d\n", "Model:", x86_info->model);        
+        printf("%-24s %d\n", "Model:", x86_info->model);
     }
     printf("%-24s %s\n", "Model name:", gen_info->model);
     if (x86_cpu_support_standard_flag(x86_info->standard_mask, CPUID_STANDARD_1_MASK))
@@ -906,6 +906,11 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
     {
         printf("%-24s %s\n", "Flags:", x86_info->flags);
     }
+#else /* Other architectures */
+#ifdef __OpenBSD__
+    printf("%-24s %s\n", "Vendor:", gen_info->vendor);
+    printf("%-24s %d\n", "CPU MHz:", gen_info->speed);
+#endif
 #endif
 
     return;
