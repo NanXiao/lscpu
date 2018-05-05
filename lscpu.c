@@ -834,7 +834,7 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
 #ifdef __OpenBSD__
     printf("%-24s %d\n", "Active CPU(s):", gen_info->active_cpu_num);
     printf("%-24s %d\n", "Total CPU(s):", gen_info->total_cpu_num);
-#else /* __FreeBSD__ */
+#else /* Other BSDs */
     printf("%-24s %d\n", "Total CPU(s):", gen_info->active_cpu_num);
 #endif
 
@@ -853,7 +853,7 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
     {
 #ifdef __OpenBSD__
         int total_cpu_num = gen_info->total_cpu_num;
-#else /* __FreeBSD__ */
+#else /* Other BSDs */
         int total_cpu_num = gen_info->active_cpu_num;
 #endif
         printf("%-24s %d\n", "Socket(s):", total_cpu_num / ((x86_info->threads_per_core) * (x86_info->cores_per_socket)));
@@ -907,8 +907,8 @@ static void print_cpu_info(gen_cpu_info *gen_info, x86_cpu_info *x86_info)
         printf("%-24s %s\n", "Flags:", x86_info->flags);
     }
 #else /* Other architectures */
+    printf("%-24s %s\n", "Model name:", gen_info->model);
 #ifdef __OpenBSD__
-    printf("%-24s %s\n", "Vendor:", gen_info->vendor);
     printf("%-24s %d\n", "CPU MHz:", gen_info->speed);
 #endif
 #endif
