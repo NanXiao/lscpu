@@ -548,6 +548,10 @@ static int get_x86_cpu_extended_flags(int intel, uint32_t ecx, uint32_t edx, cha
 static void get_x86_cpu_info(x86_cpu_info *x86_info)
 {
     int i = 0, flag_len = 0;
+#ifdef __FreeBSD__
+    int cores, threads;
+    size_t size;
+#endif
     uint32_t eax, ebx, ecx, edx;
     
     __cpuid(0, eax, ebx, ecx, edx);
@@ -801,7 +805,16 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
 
     if (is_amd_cpu(x86_info->vendor))
     {
-        /* AMD doesn't support Hyper-Threading */
+#ifdef __FreeBSD__
+	size = sizeof(int);
+    	if (sysctlbyname("kern.smp.threads_per_core", &threads, &size, NULL, 0) != 0)
+        	threads = 1;
+    	if (sysctlbyname("kern.smp.cores", &cores, &size, NULL, 0) != 0)
+		cores = 1;
+	x86_info->cores_per_socket = cores;
+	x86_info->threads_per_core = threads;
+#else
+	/* AMD doesn't support Hyper-Threading */
         x86_info->threads_per_core = 1;
         x86_info->cores_per_socket = 1;
 
@@ -810,6 +823,7 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
             __cpuid(0x80000000 | CPUID_EXTENDED_8_MASK, eax, ebx, ecx, edx);
             x86_info->cores_per_socket = (ecx & 0xFF) + 1;
         }
+#endif
     }
     
     /* Remove last space */
