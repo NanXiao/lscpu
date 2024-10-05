@@ -30,10 +30,11 @@
 #define CPUID_EXTENDED_5_MASK   (0x05)
 #define CPUID_EXTENDED_6_MASK   (0x06)
 #define CPUID_EXTENDED_8_MASK   (0x08)
+#define CPUID_EXTENDED_1E_MASK  (0x1E)
 
 
 #define CPUID_MAX_STANDARD_FUNCTION (0x17)
-#define CPUID_MAX_EXTENDED_FUNCTION (0x08)
+#define CPUID_MAX_EXTENDED_FUNCTION (0x1E)
 
 /* struct definitions */
 typedef struct
@@ -548,10 +549,6 @@ static int get_x86_cpu_extended_flags(int intel, uint32_t ecx, uint32_t edx, cha
 static void get_x86_cpu_info(x86_cpu_info *x86_info)
 {
     int i = 0, flag_len = 0;
-#ifdef __FreeBSD__
-    int cores, threads;
-    size_t size;
-#endif
     uint32_t eax, ebx, ecx, edx;
     
     __cpuid(0, eax, ebx, ecx, edx);
@@ -805,25 +802,28 @@ static void get_x86_cpu_info(x86_cpu_info *x86_info)
 
     if (is_amd_cpu(x86_info->vendor))
     {
-#ifdef __FreeBSD__
-	size = sizeof(int);
-    	if (sysctlbyname("kern.smp.threads_per_core", &threads, &size, NULL, 0) != 0)
-        	threads = 1;
-    	if (sysctlbyname("kern.smp.cores", &cores, &size, NULL, 0) != 0)
-		cores = 1;
-	x86_info->cores_per_socket = cores;
-	x86_info->threads_per_core = threads;
-#else
-	/* AMD doesn't support Hyper-Threading */
-        x86_info->threads_per_core = 1;
-        x86_info->cores_per_socket = 1;
-
         if (x86_info->extended_mask & (1 << CPUID_EXTENDED_8_MASK))
         {
             __cpuid(0x80000000 | CPUID_EXTENDED_8_MASK, eax, ebx, ecx, edx);
             x86_info->cores_per_socket = (ecx & 0xFF) + 1;
         }
-#endif
+	else
+	{
+	    /* fall back to standard CPUID leaf 1 on old processors */
+	    __cpuid(0x00000001, eax, ebx, ecx, edx);
+	    x86_info->cores_per_socket = (ebx >> 16) & 0xFF;
+	}
+
+        if (x86_info->extended_mask & (1 << CPUID_EXTENDED_1E_MASK))
+        {
+            __cpuid(0x80000000 | CPUID_EXTENDED_1E_MASK, eax, ebx, ecx, edx);
+            x86_info->threads_per_core = ((ebx >> 8) & 0xFF) + 1;
+
+            if (x86_info->threads_per_core)
+            {
+                x86_info->cores_per_socket = x86_info->cores_per_socket / x86_info->threads_per_core;
+            }
+	}
     }
     
     /* Remove last space */
